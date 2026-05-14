@@ -53,9 +53,12 @@ Upload a raw `.xlsx` scanlog exported from a fingerprint machine. The app reads 
 
 ## Setup
 
+From the project folder, create a virtual environment, install dependencies, and run the app:
+
 ```bash
-pip install -r requirements.txt
-python app.py
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python app.py
 ```
 
 App runs on `http://localhost:5000` by default.
