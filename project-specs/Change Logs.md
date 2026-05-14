@@ -79,3 +79,13 @@
 ### Feature: Auto Column Width on Data Harian
 - Data Harian sheet now automatically adjusts each column's width based on the longest value in that column, capped at 40 characters.
 - Previously all columns were a fixed width, causing content to be cut off.
+
+---
+
+## v1.3 — .xls Input Support
+
+### Feature: Accept .xls Files as Input
+- App now accepts both `.xlsx` and `.xls` upload formats, not just `.xlsx`.
+- File validation in `app.py` updated to allow either extension.
+- Error message on invalid upload updated to mention both formats.
+- `xlrd` added to `requirements.txt` as the pandas engine for reading `.xls` files.
