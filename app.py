@@ -15,7 +15,7 @@ os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
 
 def ekstensi_valid(nama_file: str) -> bool:
-    return '.' in nama_file and nama_file.rsplit('.', 1)[1].lower() == 'xlsx'
+    return '.' in nama_file and nama_file.rsplit('.', 1)[1].lower() in ('xlsx', 'xls')
 
 
 @app.route('/', methods=['GET'])
@@ -35,7 +35,7 @@ def proses_upload():
         return redirect(url_for('halaman_utama'))
 
     if not ekstensi_valid(file.filename):
-        flash('Format file harus .xlsx', 'error')
+        flash('Format file harus .xlsx atau .xls', 'error')
         return redirect(url_for('halaman_utama'))
 
     nama_aman = secure_filename(file.filename)

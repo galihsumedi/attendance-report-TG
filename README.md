@@ -1,4 +1,4 @@
-# Laporan Kehadiran Karyawan — v1.2
+# Laporan Kehadiran Karyawan — v1.3
 
 Web application for processing employee attendance data from fingerprint scanlog files into formatted Excel reports.
 
@@ -6,7 +6,7 @@ Web application for processing employee attendance data from fingerprint scanlog
 
 ## What It Does
 
-Upload a raw `.xlsx` scanlog exported from a fingerprint machine. The app reads the data, processes it, and generates a ready-to-use Excel report file with four sheets:
+Upload a raw `.xlsx` or `.xls` scanlog exported from a fingerprint machine. The app reads the data, processes it, and generates a ready-to-use Excel report file with four sheets:
 
 1. **Data Mentah** — an unmodified copy of the uploaded scanlog, kept as a reference.
 2. **Rekapitulasi** — a monthly summary per employee showing total lateness (hours and minutes), calculated penalties, and manual fields for leave categories (Cuti, Sakit, Izin, Dinas Lapangan).
@@ -18,7 +18,7 @@ Upload a raw `.xlsx` scanlog exported from a fingerprint machine. The app reads 
 ## How to Use
 
 1. Open the web app in a browser.
-2. Upload the `.xlsx` scanlog file from the fingerprint machine.
+2. Upload the `.xlsx` or `.xls` scanlog file from the fingerprint machine.
 3. Click **Proses & Download Laporan**.
 4. Open the downloaded file in Excel:
    - Fill in leave columns and penalty rate in **Rekapitulasi**.
@@ -46,7 +46,7 @@ Upload a raw `.xlsx` scanlog exported from a fingerprint machine. The app reads 
 ## Tech Stack
 
 - **Backend**: Python 3.9+ with Flask
-- **Excel processing**: openpyxl, pandas
+- **Excel processing**: openpyxl, pandas, xlrd
 - **Frontend**: HTML with drag-and-drop file upload
 
 ---
