@@ -111,14 +111,13 @@ def proses_data_scanlog(path_file: str) -> dict[str, Any]:
     if df.empty:
         raise ValueError("Tidak ada data valid setelah parsing tanggal.")
 
-    tanggal_pertama = df['Tanggal_parsed'].min()
     bulan_nama = [
         '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ]
-    bulan_tahun = f"{bulan_nama[tanggal_pertama.month]} {tanggal_pertama.year}"
-    tahun = tanggal_pertama.year
-    bulan = tanggal_pertama.month
+    frekuensi = df['Tanggal_parsed'].dropna().apply(lambda d: (d.year, d.month)).value_counts()
+    tahun, bulan = frekuensi.idxmax()
+    bulan_tahun = f"{bulan_nama[bulan]} {tahun}"
     jumlah_hari = monthrange(tahun, bulan)[1]
 
     semua_tanggal = [
