@@ -267,6 +267,14 @@ def buat_sheet_data_harian(
 
             baris += 1
 
+    # Auto-fit column widths based on max content length
+    for col_idx, col_cells in enumerate(ws.columns, 1):
+        max_len = max(
+            len(str(cell.value)) if cell.value is not None else 0
+            for cell in col_cells
+        )
+        ws.column_dimensions[get_column_letter(col_idx)].width = min(max_len + 4, 40)
+
     # Auto-filter on header row
     ws.auto_filter.ref = f'A1:{get_column_letter(14)}{baris - 1}'
 
