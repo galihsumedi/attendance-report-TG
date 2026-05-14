@@ -24,7 +24,7 @@ flowchart LR
 ### Tech Stack
 
 - **Backend**: Python 3.9+ dengan Flask
-- **Library Utama**: `openpyxl` (baca/tulis Excel), `pandas` (pengolahan data)
+- **Library Utama**: `openpyxl` (baca/tulis Excel), `pandas` (pengolahan data), `xlrd` (baca file `.xls` lama)
 - **Frontend**: HTML dengan form upload drag-and-drop
 - **Hosting**: Render / Railway / VPS
 
@@ -48,7 +48,7 @@ attendance-report/
 
 ## Format Input
 
-File `.xlsx` dari mesin fingerprint. Header data ada di **baris ke-2** (baris 1 diabaikan). Kolom wajib:
+File `.xlsx` atau `.xls` dari mesin fingerprint. Header data ada di **baris ke-2** (baris 1 diabaikan). Kolom wajib:
 
 | Kolom | Tipe | Keterangan |
 |---|---|---|
@@ -206,7 +206,7 @@ Flat table berisi data harian semua karyawan. **Visible dan dapat diedit** (tida
 
 Sebelum diproses, sistem memvalidasi:
 
-- File berformat `.xlsx`
+- File berformat `.xlsx` atau `.xls`
 - Kolom wajib ada: PIN, NIP, Nama, Tanggal, Scan 1
 - Format tanggal valid
 - Tidak ada baris duplikat (PIN + Tanggal yang sama lebih dari sekali)
@@ -218,7 +218,7 @@ Jika validasi gagal, pesan error ditampilkan di halaman upload.
 ## Alur Pengguna
 
 1. Buka website
-2. Pilih file `.xlsx` dari mesin fingerprint (drag-and-drop atau klik)
+2. Pilih file `.xlsx` atau `.xls` dari mesin fingerprint (drag-and-drop atau klik)
 3. Klik **"Proses & Download Laporan"**
 4. Tunggu proses (biasanya < 5 detik)
 5. Download file `.xlsx` hasil
