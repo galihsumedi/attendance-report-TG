@@ -7,8 +7,7 @@ import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.datavalidation import DataValidation
-from openpyxl.formatting.rule import FormulaRule
+
 
 TNR = 'Times New Roman'
 
@@ -16,11 +15,8 @@ FONT_TITLE  = Font(name=TNR, bold=True, size=14)
 FONT_HEADER = Font(name=TNR, bold=True, size=12)
 FONT_NORMAL = Font(name=TNR, size=12)
 FONT_MERAH  = Font(name=TNR, size=12, color='FF0000')
-FONT_PILIH  = Font(name=TNR, bold=True, size=12, color='0070C0')
-
 FILL_HEADER  = PatternFill(start_color='D9E1F2', end_color='D9E1F2', fill_type='solid')
 FILL_WEEKEND = PatternFill(start_color='DCE6F1', end_color='DCE6F1', fill_type='solid')
-FILL_PILIH   = PatternFill(start_color='FFFFCC', end_color='FFFFCC', fill_type='solid')
 
 THIN = Side(style='thin')
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
@@ -80,7 +76,7 @@ def buat_sheet_rekapitulasi(
     wb: Workbook,
     rekapitulasi: list[dict],
     bulan_tahun: str,
-    rng_end: int,
+    li_refs: dict[int, dict],
 ) -> None:
     ws = wb.create_sheet(title='Rekapitulasi')
 
@@ -147,23 +143,36 @@ def buat_sheet_rekapitulasi(
     # ---- Data rows ----
     for idx, k in enumerate(rekapitulasi):
         r = 7 + idx
-        static = [
-            (1, idx + 1), (2, k['nama']),
-            (3, None), (4, None), (5, None), (6, None),
-            (10, None),  # J: Denda/Menit — user fills manually
-        ]
-        for col, val in static:
+        pin = k['pin']
+        refs = li_refs.get(pin, {})
+
+        def li(field: str) -> str | None:
+            addr = refs.get(field)
+            return f"='Laporan Individual'!{addr}" if addr else None
+
+        # No., Nama
+        for col, val in [(1, idx + 1), (2, k['nama'])]:
             c = ws.cell(row=r, column=col, value=val)
             c.font = FONT_NORMAL
             c.border = BORDER
             c.alignment = ALIGN_L if col == 2 else ALIGN_C0
 
-        # I = SUMIF total lateness minutes from Data Harian col H
+        # C–F: Cuti, Sakit, Izin, Dinas — reference editable cells in Laporan Individual
+        for col, field in [(3, 'cuti'), (4, 'sakit'), (5, 'izin'), (6, 'dinas')]:
+            c = ws.cell(row=r, column=col, value=li(field))
+            c.font = FONT_NORMAL
+            c.border = BORDER
+            c.alignment = ALIGN_C0
+
+        # J: Denda/Menit — user fills manually
+        c = ws.cell(row=r, column=10, value=None)
+        c.font = FONT_NORMAL
+        c.border = BORDER
+        c.alignment = ALIGN_C0
+
+        # I = total late minutes, pulled from Terlambat Masuk cell in Laporan Individual
         c = ws.cell(row=r, column=9)
-        c.value = (
-            f"=SUMIF('Data Harian'!$A$2:$A${rng_end},"
-            f"B{r},'Data Harian'!$H$2:$H${rng_end})"
-        )
+        c.value = li('terlambat')
         c.font = FONT_NORMAL
         c.number_format = '#,##0'
         c.border = BORDER
@@ -282,150 +291,216 @@ def buat_sheet_data_harian(
 
 
 # ---------------------------------------------------------------------------
-# Sheet 3 — Laporan Individual (lookup template)
+# Sheet 3 — Laporan Individual (one stacked block per employee)
 # ---------------------------------------------------------------------------
 
-def buat_sheet_individual_lookup(
+SIGNERS = [
+    ('Dibuat Oleh :', 'A', 'C'),
+    ('Diperiksa Oleh :', 'D', 'F'),
+    ('Diketahui Oleh :', 'G', None),
+]
+SIGNER_NAMES = ['Justia Rifki Krismantara', 'Danta Putra Perdana', 'Hermanto Pribadi']
+
+NOTES_LINES = [
+    ('cuti',         ' Cuti                          ', 'Hari'),
+    ('sakit',        ' Sakit                        ', 'Hari'),
+    ('izin',         ' Izin                           ', 'Hari'),
+    ('dinas',        ' Lapangan /Dinas     ', 'Hari'),
+    ('tepat_waktu',  ' Tepat Waktu            ', 'Hari'),
+    ('terlambat',    ' Terlambat Masuk    ', 'Menit'),
+    ('cepat_pulang', ' Cepat Pulang', 'Menit'),
+]
+
+COL_HEADERS = ['Hari', 'Tanggal', 'Jam Kerja', 'Jam Masuk', 'Jam Keluar', 'Jam Terlambat', 'Catatan']
+
+
+def buat_sheet_individual_static(
     wb: Workbook,
     laporan_individual: dict[int, dict],
-    daftar_nama: list[str],
-    jumlah_hari_bulan: int,
-    nama_sheet_helper: str,
-) -> None:
+) -> dict[int, dict]:
+    """
+    Writes one block per employee to 'Laporan Individual', stacked vertically.
+    Returns {pin: {field: cell_address}} so Rekapitulasi can reference key cells.
+
+    Block layout (R = block start row, n = days in month):
+      R+0         title (merged A:G)
+      R+1, R+2   blank
+      R+3         Fingerprint ID
+      R+4         Nama Karyawan
+      R+5, R+6   column headers (each col A–G merged over 2 rows)
+      R+7 … R+6+n  daily data rows
+      R+7+n       TOTAL row
+      R+8+n, R+9+n  blank
+      R+10+n      signature label row
+      R+11+n … R+13+n  blank (signature space)
+      R+14+n      signer names
+      R+15+n      blank
+      R+16+n      "Catatan :"
+      R+17+n      Cuti
+      R+18+n      Sakit
+      R+19+n      Izin
+      R+20+n      Lapangan/Dinas
+      R+21+n      Tepat Waktu (formula)
+      R+22+n      Terlambat Masuk (formula)
+      R+23+n      Cepat Pulang
+      R+24+n … R+26+n  blank separator
+      R+27+n      ← next block starts here
+    """
     ws = wb.create_sheet(title='Laporan Individual')
 
-    total_rows = sum(len(d['detail']) for d in laporan_individual.values())
-    rng_end = total_rows + 1  # +1 for header row in Data Harian
+    pins = sorted(laporan_individual.keys())
+    li_refs: dict[int, dict] = {}
 
-    def rng(col: str) -> str:
-        return f"'{nama_sheet_helper}'!${col}$2:${col}${rng_end}"
+    R = 1
+    for pin in pins:
+        data = laporan_individual[pin]
+        nama = data['nama']
+        detail = data['detail']
+        n = len(detail)
 
-    # Key column is M ("Nama|DayNum"). Simple single-criteria MATCH —
-    # no array formula needed, works in all Excel versions.
-    def lookup(helper_col: str, day: int) -> str:
-        return (
-            f'=IFERROR(INDEX({rng(helper_col)},'
-            f'MATCH($C$6&"|"&{day},{rng("M")},0)),"")'
-        )
+        ds = R + 7          # data start row
+        de = R + 6 + n      # data end row
+        r_total = R + 7 + n
 
-    def weekend_flag(day: int) -> str:
-        # K = Is Weekend column in Data Harian
-        return (
-            f'=IFERROR(INDEX({rng("K")},'
-            f'MATCH($C$6&"|"&{day},{rng("M")},0)),0)'
-        )
+        # ---- Title ----
+        ws.merge_cells(f'A{R}:G{R}')
+        c = ws[f'A{R}']
+        c.value = 'LAPORAN KEHADIRAN KARYAWAN'
+        c.font = FONT_TITLE
+        c.alignment = ALIGN_C0
 
-    # ---- Row 1: Warning ----
-    ws.merge_cells('A1:H1')
-    c = ws['A1']
-    c.value = (
-        'PERINGATAN: Sheet ini hanya untuk melihat laporan. '
-        'Untuk mengisi Catatan (Manual), edit langsung di sheet "Data Harian".'
-    )
-    c.font = Font(name=TNR, bold=True, size=11, color='C00000')
-    c.fill = PatternFill(start_color='FFE0E0', end_color='FFE0E0', fill_type='solid')
-    c.alignment = ALIGN_C0
+        # ---- ID / Name rows ----
+        ws[f'A{R+3}'].value = 'Fingerprint ID'
+        ws[f'A{R+3}'].font = FONT_HEADER
+        ws[f'C{R+3}'].value = pin
+        ws[f'C{R+3}'].font = FONT_NORMAL
 
-    # ---- Row 2: Title ----
-    ws.merge_cells('A2:H2')
-    c = ws['A2']
-    c.value = 'LAPORAN KEHADIRAN KARYAWAN'
-    c.font = FONT_TITLE
-    c.alignment = ALIGN_C0
+        ws[f'A{R+4}'].value = 'Nama Karyawan'
+        ws[f'A{R+4}'].font = FONT_HEADER
+        ws[f'C{R+4}'].value = nama
+        ws[f'C{R+4}'].font = FONT_NORMAL
 
-    # ---- Row 5: Fingerprint ID ----
-    ws['A5'].value = 'Fingerprint ID'
-    ws['A5'].font = FONT_HEADER
-    # Simple MATCH: every row for this employee has the same PIN, first match is fine
-    ws['C5'].value = f'=IFERROR(INDEX({rng("L")},MATCH($C$6,{rng("A")},0)),"")'
-    ws['C5'].font = FONT_NORMAL
-
-    # ---- Row 6: Nama Karyawan dropdown ----
-    ws['A6'].value = 'Nama Karyawan'
-    ws['A6'].font = FONT_HEADER
-    ws['C6'].value = daftar_nama[0] if daftar_nama else ''
-    ws['C6'].font = FONT_PILIH
-    ws['C6'].fill = FILL_PILIH
-    ws['C6'].border = BORDER
-
-    # Name list in hidden column J (dropdown source)
-    for i, nama in enumerate(daftar_nama, 1):
-        ws.cell(row=i, column=10, value=nama)
-    ws.column_dimensions['J'].hidden = True
-
-    dv = DataValidation(
-        type='list',
-        formula1=f'=$J$1:$J${len(daftar_nama)}',
-        allow_blank=False,
-    )
-    dv.prompt = 'Pilih nama karyawan'
-    dv.promptTitle = 'Nama Karyawan'
-    dv.error = 'Pilih nama dari daftar yang tersedia.'
-    dv.errorTitle = 'Nama Tidak Valid'
-    ws.add_data_validation(dv)
-    dv.add('C6')
-
-    # ---- Rows 7–8: Double-row column headers (matching reference style) ----
-    col_labels = [
-        ('A', 'Hari'), ('B', 'Tanggal'), ('C', 'Jam Kerja'),
-        ('D', 'Jam Masuk'), ('E', 'Jam Keluar'), ('F', 'Jam Terlambat'),
-        ('G', 'Catatan\n(Otomatis)'), ('H', 'Catatan\n(Manual)'),
-    ]
-    for kol, label in col_labels:
-        ws.merge_cells(f'{kol}7:{kol}8')
-        _header_cell(ws, f'{kol}7', label)
-        ws[f'{kol}8'].border = BORDER  # slave row border
-
-    # ---- Data rows 9 … (8 + days) ----
-    # Data Harian column mapping (A–H in Laporan Individual → columns in Data Harian):
-    #   C=Hari, D=Tanggal, E=JamKerja, F=JamMasuk, G=JamKeluar,
-    #   I=JamTerlambat(display string), J=CatatanOtomatis, N=CatatanManual
-    col_map = [
-        ('A', 'C'), ('B', 'D'), ('C', 'E'), ('D', 'F'),
-        ('E', 'G'), ('F', 'I'), ('G', 'J'), ('H', 'N'),
-    ]
-
-    for day in range(1, jumlah_hari_bulan + 1):
-        r = 8 + day  # rows 9, 10, ...
-
-        for sheet_col, helper_col in col_map:
-            c = ws[f'{sheet_col}{r}']
-            c.value = lookup(helper_col, day)
-            c.font = FONT_NORMAL
+        # ---- Column headers (double-row merged per column) ----
+        r_hdr = R + 5
+        for ci, label in enumerate(COL_HEADERS, 1):
+            cl = get_column_letter(ci)
+            ws.merge_cells(f'{cl}{r_hdr}:{cl}{r_hdr+1}')
+            c = ws[f'{cl}{r_hdr}']
+            c.value = label
+            c.font = FONT_HEADER
+            c.fill = FILL_HEADER
             c.border = BORDER
+            c.alignment = ALIGN_C
+            ws[f'{cl}{r_hdr+1}'].border = BORDER
+
+        # ---- Daily data rows ----
+        for idx, d in enumerate(detail):
+            r = ds + idx
+            is_wknd = d['is_weekend']
+            font = FONT_MERAH if is_wknd else FONT_NORMAL
+            fill = FILL_WEEKEND if is_wknd else None
+
+            menit = d['menit_terlambat']
+            row_vals = [
+                ('A', d['hari'],                            ALIGN_C0),
+                ('B', d['tanggal'],                         ALIGN_C0),
+                ('C', d['jam_kerja'],                       ALIGN_C0),
+                ('D', format_waktu(d['jam_masuk']),         ALIGN_C0),
+                ('E', format_waktu(d['jam_keluar']),        ALIGN_C0),
+                ('F', menit if menit > 0 else None,         ALIGN_C0),
+                ('G', d['catatan_otomatis'],                ALIGN_L),
+            ]
+            for cl, val, align in row_vals:
+                c = ws[f'{cl}{r}']
+                c.value = val
+                c.font = font
+                c.border = BORDER
+                c.alignment = align
+                if fill:
+                    c.fill = fill
+            ws[f'B{r}'].number_format = 'DD-MM-YYYY'
+
+        # ---- TOTAL row ----
+        ws.merge_cells(f'A{r_total}:G{r_total}')
+        c = ws[f'A{r_total}']
+        c.value = 'TOTAL'
+        c.font = FONT_HEADER
+        c.alignment = ALIGN_C0
+        c.border = BORDER
+
+        # ---- Signature label row ----
+        r_sig_lbl = r_total + 3
+        ws.merge_cells(f'A{r_sig_lbl}:C{r_sig_lbl}')
+        ws.merge_cells(f'D{r_sig_lbl}:F{r_sig_lbl}')
+        for cell_ref, text in [
+            (f'A{r_sig_lbl}', 'Dibuat Oleh :'),
+            (f'D{r_sig_lbl}', 'Diperiksa Oleh :'),
+            (f'G{r_sig_lbl}', 'Diketahui Oleh :'),
+        ]:
+            c = ws[cell_ref]
+            c.value = text
+            c.font = FONT_NORMAL
+            c.alignment = ALIGN_L
+
+        # ---- Signer names row ----
+        r_sig_names = r_total + 7
+        ws.merge_cells(f'A{r_sig_names}:C{r_sig_names}')
+        ws.merge_cells(f'D{r_sig_names}:F{r_sig_names}')
+        for cell_ref, text in [
+            (f'A{r_sig_names}', 'Justia Rifki Krismantara'),
+            (f'D{r_sig_names}', 'Danta Putra Perdana'),
+            (f'G{r_sig_names}', 'Hermanto Pribadi'),
+        ]:
+            c = ws[cell_ref]
+            c.value = text
+            c.font = FONT_NORMAL
+            c.alignment = ALIGN_L
+
+        # ---- "Catatan :" header ----
+        r_cat_hdr = r_total + 9
+        ws[f'A{r_cat_hdr}'].value = 'Catatan :'
+        ws[f'A{r_cat_hdr}'].font = FONT_HEADER
+
+        # ---- Notes lines ----
+        r_notes = r_total + 10
+        li_refs[pin] = {}
+        for i, (key, label, unit) in enumerate(NOTES_LINES):
+            r_note = r_notes + i
+            ws.merge_cells(f'A{r_note}:B{r_note}')
+            c = ws[f'A{r_note}']
+            c.value = label
+            c.font = FONT_NORMAL
+            c.alignment = ALIGN_L
+
+            ws[f'C{r_note}'].value = ':'
+            ws[f'C{r_note}'].font = FONT_NORMAL
+            ws[f'C{r_note}'].alignment = ALIGN_C0
+
+            c = ws[f'D{r_note}']
+            if key == 'tepat_waktu':
+                c.value = (
+                    f'=COUNTIF(C{ds}:C{de},"08:00-17:00")'
+                    f'-COUNTIF(F{ds}:F{de},">"&0)'
+                )
+            elif key == 'terlambat':
+                c.value = f'=SUM(F{ds}:F{de})'
+            c.font = FONT_NORMAL
+            c.number_format = '0'
             c.alignment = ALIGN_C0
 
-        # I (hidden): weekend flag for conditional formatting
-        ws[f'I{r}'].value = weekend_flag(day)
+            ws[f'E{r_note}'].value = unit
+            ws[f'E{r_note}'].font = FONT_NORMAL
+            ws[f'E{r_note}'].alignment = ALIGN_L
 
-    ws.column_dimensions['I'].hidden = True
+            li_refs[pin][key] = f'D{r_note}'
 
-    # ---- Conditional formatting: highlight weekend rows ----
-    r_data_start = 9
-    r_data_end = 8 + jumlah_hari_bulan
-    ws.conditional_formatting.add(
-        f'A{r_data_start}:H{r_data_end}',
-        FormulaRule(
-            formula=[f'$I{r_data_start}=1'],
-            fill=FILL_WEEKEND,
-            font=FONT_MERAH,
-        )
-    )
+        R += n + 27
 
     # ---- Column widths ----
-    lebar = {
-        'A': 7, 'B': 14, 'C': 14, 'D': 14,
-        'E': 14, 'F': 17, 'G': 30, 'H': 30,
-    }
-    for kol, w in lebar.items():
+    for kol, w in {'A': 22, 'B': 14, 'C': 14, 'D': 12, 'E': 12, 'F': 16, 'G': 30}.items():
         ws.column_dimensions[kol].width = w
 
-    # ---- Sheet protection ----
-    # Unlock only C6 (name dropdown) so users cannot accidentally overwrite
-    # formulas. Catatan (Manual) must be edited in the Data Harian sheet.
-    from openpyxl.styles.protection import Protection
-    ws['C6'].protection = Protection(locked=False)
-    ws.protection.sheet = True
+    return li_refs
 
 
 # ---------------------------------------------------------------------------
@@ -447,18 +522,10 @@ def buat_file_excel(
         for pin in sorted(laporan_individual.keys())
     ]
 
-    first_pin = sorted(laporan_individual.keys())[0]
-    jumlah_hari_bulan = len(laporan_individual[first_pin]['detail'])
-    total_baris_data = sum(len(d['detail']) for d in laporan_individual.values())
-    rng_end = total_baris_data + 1  # +1 for Data Harian header row
-
     buat_sheet_data_mentah(wb, data_mentah)
-    buat_sheet_rekapitulasi(wb, rekapitulasi, bulan_tahun, rng_end)
-    helper_name = buat_sheet_data_harian(wb, laporan_individual, daftar_nama)
-    buat_sheet_individual_lookup(
-        wb, laporan_individual, daftar_nama,
-        jumlah_hari_bulan, helper_name,
-    )
+    li_refs = buat_sheet_individual_static(wb, laporan_individual)
+    buat_sheet_rekapitulasi(wb, rekapitulasi, bulan_tahun, li_refs)
+    buat_sheet_data_harian(wb, laporan_individual, daftar_nama)
 
     sheet_order = ['Data Mentah', 'Rekapitulasi', 'Laporan Individual', 'Data Harian']
     for i, name in enumerate(sheet_order):

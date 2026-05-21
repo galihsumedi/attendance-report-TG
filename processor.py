@@ -7,6 +7,8 @@ from typing import Any
 
 import pandas as pd
 
+from nama_karyawan import NAMA_LENGKAP
+
 JAM_MASUK_BATAS = time(8, 0, 0)
 HARI_INDONESIA = {
     0: 'Sen', 1: 'Sel', 2: 'Rab',
@@ -135,7 +137,7 @@ def proses_data_scanlog(path_file: str) -> dict[str, Any]:
 
     for _, karyawan in karyawan_unik.iterrows():
         pin = karyawan['PIN']
-        nama = karyawan['Nama']
+        nama = NAMA_LENGKAP.get(karyawan['Nama'], karyawan['Nama'])
         nip = karyawan.get('NIP', '')
 
         data_karyawan = df[df['PIN'] == pin].copy()
