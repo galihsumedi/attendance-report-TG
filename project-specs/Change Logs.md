@@ -89,3 +89,14 @@
 - File validation in `app.py` updated to allow either extension.
 - Error message on invalid upload updated to mention both formats.
 - `xlrd` added to `requirements.txt` as the pandas engine for reading `.xls` files.
+
+---
+
+## v2.1 — Laporan Individual Reformatting and Nama Lengkap Automatic Conversion
+
+### Request: HR requested a different layout for Laporan Individual
+- Laporan Individual is reformatted for HR.
+- Laporan Individual does not include the dropdown but rather individual reports are printed independently.
+
+### Feature: Full name conversion
+- Added nama_lengkap.py to automatically convert 'fingerprint' names into full legal names of the employees for reporting purporses.
