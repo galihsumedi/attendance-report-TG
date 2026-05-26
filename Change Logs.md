@@ -92,6 +92,22 @@
 
 ---
 
+## v2.2 — Auto-Detection of New Employee Names on Upload
+
+### Feature: New employee name detection
+- When a scanlog is uploaded, the app now checks every `Nama` value in the file against the registered names in `nama_karyawan.py`.
+- If any unregistered names are found, the download is held and the user is shown a form listing each unknown fingerprint name with an input field for the full legal name.
+- All fields are required — the form cannot be submitted with any name left blank.
+- Once confirmed, the new names are registered in memory immediately and the report is generated and downloaded as normal.
+
+### Feature: Automatic commit of new names to GitHub
+- After the user confirms new names, the app commits the updated `nama_karyawan.py` directly to the GitHub repository via the GitHub Contents API.
+- Requires two environment variables: `GITHUB_TOKEN` (a PAT with `contents:write` scope) and `GITHUB_REPO` (e.g. `galihsumedi/attendance-report-TG`).
+- If the environment variables are not set (e.g. local development), the GitHub commit step is silently skipped — the in-memory update still applies for the current session.
+- If the API call fails at runtime, the report download still proceeds and a warning is shown asking the user to update `nama_karyawan.py` manually.
+
+---
+
 ## v2.1 — Laporan Individual Reformatting and Nama Lengkap Automatic Conversion
 
 ### Request: HR requested a different layout for Laporan Individual
