@@ -108,6 +108,23 @@
 
 ---
 
+## v2.22 — Output Cleanup and Visual Polish
+
+### Fix: Removed "Tepat Waktu" and "Cepat Pulang" from Laporan Individual
+- The "Catatan" section at the bottom of each employee block in Laporan Individual no longer includes the "Tepat Waktu" and "Cepat Pulang" rows.
+- Both the label rows and their formulas have been removed entirely — no blank rows are left in their place.
+- Block spacing adjusted accordingly (2 fewer rows per employee block).
+
+### Fix: Removed blank row 2 from Rekapitulasi
+- Row 2 in Rekapitulasi was intentionally blank, creating unnecessary visual gap between the company title and the month header.
+- Removed: the month header now sits directly on row 2, and the column headers and data rows shift up by one row each.
+
+### Feature: Gridlines hidden on Rekapitulasi and Laporan Individual
+- Sheet gridlines are now turned off for both Rekapitulasi and Laporan Individual when the file is opened in Excel.
+- Data Mentah and Data Harian are unaffected.
+
+---
+
 ## v2.21 — UI Fix: Laporan Individual Total Row and Column Header
 
 ### Fix: TOTAL row in Laporan Individual no longer merges across all columns

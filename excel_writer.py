@@ -79,11 +79,12 @@ def buat_sheet_rekapitulasi(
     li_refs: dict[int, dict],
 ) -> None:
     ws = wb.create_sheet(title='Rekapitulasi')
+    ws.sheet_view.showGridLines = False
 
-    # Title rows — row 1: company header, row 3: month (row 2 intentionally blank)
+    # Title rows — row 1: company header, row 2: month
     for row, text in [
         (1, 'REKAPITULASI LAPORAN KEHADIRAN KARYAWAN TECTONA GROUP'),
-        (3, f'BULAN {bulan_tahun.upper()}'),
+        (2, f'BULAN {bulan_tahun.upper()}'),
     ]:
         ws.merge_cells(f'A{row}:M{row}')
         c = ws[f'A{row}']
@@ -91,10 +92,10 @@ def buat_sheet_rekapitulasi(
         c.font = FONT_TITLE
         c.alignment = ALIGN_C0
 
-    # ---- Header rows 5–6 ----
-    # Columns that merge rows 5+6 into a single label.
-    # Border must be set on BOTH anchor (row 5) and slave (row 6) cells so the
-    # full outline appears — openpyxl only reads the bottom border from row 6.
+    # ---- Header rows 4–5 ----
+    # Columns that merge rows 4+5 into a single label.
+    # Border must be set on BOTH anchor (row 4) and slave (row 5) cells so the
+    # full outline appears — openpyxl only reads the bottom border from row 5.
     span_two_rows = {
         'A': 'No',
         'B': 'Nama Karyawan',
@@ -106,43 +107,43 @@ def buat_sheet_rekapitulasi(
         'M': 'Jumlah',
     }
     for kol, label in span_two_rows.items():
-        ws[f'{kol}5'].value = label
-        ws.merge_cells(f'{kol}5:{kol}6')
-        c = ws[f'{kol}5']
+        ws[f'{kol}4'].value = label
+        ws.merge_cells(f'{kol}4:{kol}5')
+        c = ws[f'{kol}4']
         c.font = FONT_HEADER
         c.fill = FILL_HEADER
         c.border = BORDER
         c.alignment = ALIGN_C
-        ws[f'{kol}6'].border = BORDER  # bottom border of merged area
+        ws[f'{kol}5'].border = BORDER  # bottom border of merged area
 
-    # F: "Dinas Lapangan" — single merged cell spanning rows 5–6 with wrap text
-    ws['F5'].value = 'Dinas Lapangan'
-    ws.merge_cells('F5:F6')
-    c = ws['F5']
+    # F: "Dinas Lapangan" — single merged cell spanning rows 4–5 with wrap text
+    ws['F4'].value = 'Dinas Lapangan'
+    ws.merge_cells('F4:F5')
+    c = ws['F4']
     c.font = FONT_HEADER
     c.fill = FILL_HEADER
     c.border = BORDER
     c.alignment = ALIGN_C          # ALIGN_C has wrap_text=True
-    ws['F6'].border = BORDER       # bottom border of merged area
+    ws['F5'].border = BORDER       # bottom border of merged area
 
-    # G5:H5 merged — "Terlambat Masuk"
-    ws.merge_cells('G5:H5')
-    _header_cell(ws, 'G5', 'Terlambat Masuk')
-    ws['H5'].border = BORDER  # slave cell still needs border
-    _header_cell(ws, 'G6', 'Jam')
-    _header_cell(ws, 'H6', 'Menit')
+    # G4:H4 merged — "Terlambat Masuk"
+    ws.merge_cells('G4:H4')
+    _header_cell(ws, 'G4', 'Terlambat Masuk')
+    ws['H4'].border = BORDER  # slave cell still needs border
+    _header_cell(ws, 'G5', 'Jam')
+    _header_cell(ws, 'H5', 'Menit')
 
     # J: two-row label (Denda/Menit / Rp.), not merged
-    _header_cell(ws, 'J5', 'Denda/Menit')
-    _header_cell(ws, 'J6', 'Rp.')
+    _header_cell(ws, 'J4', 'Denda/Menit')
+    _header_cell(ws, 'J5', 'Rp.')
 
     # L: two-row label (Sangsi / 20 X), not merged
-    _header_cell(ws, 'L5', 'Sangsi')
-    _header_cell(ws, 'L6', '20 X')
+    _header_cell(ws, 'L4', 'Sangsi')
+    _header_cell(ws, 'L5', '20 X')
 
     # ---- Data rows ----
     for idx, k in enumerate(rekapitulasi):
-        r = 7 + idx
+        r = 6 + idx
         pin = k['pin']
         refs = li_refs.get(pin, {})
 
@@ -302,13 +303,11 @@ SIGNERS = [
 SIGNER_NAMES = ['Justia Rifki Krismantara', 'Danta Putra Perdana', 'Hermanto Pribadi']
 
 NOTES_LINES = [
-    ('cuti',         ' Cuti                          ', 'Hari'),
-    ('sakit',        ' Sakit                        ', 'Hari'),
-    ('izin',         ' Izin                           ', 'Hari'),
-    ('dinas',        ' Lapangan /Dinas     ', 'Hari'),
-    ('tepat_waktu',  ' Tepat Waktu            ', 'Hari'),
-    ('terlambat',    ' Terlambat Masuk    ', 'Menit'),
-    ('cepat_pulang', ' Cepat Pulang', 'Menit'),
+    ('cuti',      ' Cuti                          ', 'Hari'),
+    ('sakit',     ' Sakit                        ', 'Hari'),
+    ('izin',      ' Izin                           ', 'Hari'),
+    ('dinas',     ' Lapangan /Dinas     ', 'Hari'),
+    ('terlambat', ' Terlambat Masuk    ', 'Menit'),
 ]
 
 COL_HEADERS = ['Hari', 'Tanggal', 'Jam Kerja', 'Jam Masuk', 'Jam Keluar', 'Menit Terlambat', 'Catatan']
@@ -340,13 +339,12 @@ def buat_sheet_individual_static(
       R+18+n      Sakit
       R+19+n      Izin
       R+20+n      Lapangan/Dinas
-      R+21+n      Tepat Waktu (formula)
-      R+22+n      Terlambat Masuk (formula)
-      R+23+n      Cepat Pulang
-      R+24+n … R+26+n  blank separator
-      R+27+n      ← next block starts here
+      R+21+n      Terlambat Masuk (formula)
+      R+22+n … R+24+n  blank separator
+      R+25+n      ← next block starts here
     """
     ws = wb.create_sheet(title='Laporan Individual')
+    ws.sheet_view.showGridLines = False
 
     pins = sorted(laporan_individual.keys())
     li_refs: dict[int, dict] = {}
@@ -487,12 +485,7 @@ def buat_sheet_individual_static(
             ws[f'C{r_note}'].alignment = ALIGN_C0
 
             c = ws[f'D{r_note}']
-            if key == 'tepat_waktu':
-                c.value = (
-                    f'=COUNTIF(C{ds}:C{de},"08:00-17:00")'
-                    f'-COUNTIF(F{ds}:F{de},">"&0)'
-                )
-            elif key == 'terlambat':
+            if key == 'terlambat':
                 c.value = f'=SUM(F{ds}:F{de})'
             c.font = FONT_NORMAL
             c.number_format = '0'
@@ -504,7 +497,7 @@ def buat_sheet_individual_static(
 
             li_refs[pin][key] = f'D{r_note}'
 
-        R += n + 27
+        R += n + 25
 
     # ---- Column widths ----
     for kol, w in {'A': 22, 'B': 14, 'C': 14, 'D': 12, 'E': 12, 'F': 16, 'G': 30}.items():
