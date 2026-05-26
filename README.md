@@ -1,6 +1,6 @@
-# Laporan Kehadiran Karyawan — v2.1
+# Laporan Kehadiran Karyawan — v2.2
 
-Web application for processing employee attendance data from fingerprint scanlog files into formatted Excel reports.
+Web application for processing employee attendance data from fingerprint scanlog files into formatted Excel reports. New employee names detected in an uploaded file are flagged on-screen for the user to resolve before the report is generated, and are automatically committed back to the repository.
 
 ---
 
@@ -36,10 +36,31 @@ Upload a raw `.xlsx` or `.xls` scanlog exported from a fingerprint machine. The 
 
 ---
 
+## New Employee Name Detection
+
+When a scanlog containing an unregistered fingerprint name is uploaded, the app interrupts the normal flow and shows a form listing each unknown name. The user must provide the full legal name for every entry before the report is generated.
+
+Once confirmed, the new names are:
+1. Applied immediately to the current request (in-memory update).
+2. Committed to `nama_karyawan.py` in the GitHub repository via the GitHub Contents API, so they persist across future deploys.
+
+This requires two environment variables to be set on the server (see Deployment below).
+
+---
+
 ## Deployment
 
 - **Repository**: [github.com/galihsumedi/attendance-report-TG](https://github.com/galihsumedi/attendance-report-TG)
 - **Live App**: [attendance-report-tg.onrender.com](https://attendance-report-tg.onrender.com/)
+
+### Required environment variables (Render)
+
+| Variable | Value |
+|---|---|
+| `GITHUB_TOKEN` | A GitHub Personal Access Token with `repo` (contents write) scope |
+| `GITHUB_REPO` | `galihsumedi/attendance-report-TG` |
+
+If these variables are not set, the app runs normally but new names are not persisted to GitHub — they apply only for the current server session.
 
 ---
 
@@ -62,3 +83,5 @@ python3 -m venv .venv
 ```
 
 App runs on `http://localhost:5000` by default.
+
+The GitHub commit step is skipped automatically when `GITHUB_TOKEN` is not set, so no extra configuration is needed for local development.
