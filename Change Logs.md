@@ -108,6 +108,18 @@
 
 ---
 
+## v2.21 — UI Fix: Laporan Individual Total Row and Column Header
+
+### Fix: TOTAL row in Laporan Individual no longer merges across all columns
+- The TOTAL row was previously merged across columns A–G, hiding the total minutes late value entirely.
+- Fixed: columns A–E are merged for the "TOTAL" label; column F now displays a SUM formula showing the total minutes late for the employee.
+
+### Fix: Column F header renamed from "Jam Terlambat" to "Menit Terlambat"
+- The column header in Laporan Individual for lateness was labelled "Jam Terlambat" (hours late), which was incorrect — the column stores values in minutes.
+- Renamed to "Menit Terlambat" to match the actual data.
+
+---
+
 ## v2.1 — Laporan Individual Reformatting and Nama Lengkap Automatic Conversion
 
 ### Request: HR requested a different layout for Laporan Individual

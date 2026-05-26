@@ -311,7 +311,7 @@ NOTES_LINES = [
     ('cepat_pulang', ' Cepat Pulang', 'Menit'),
 ]
 
-COL_HEADERS = ['Hari', 'Tanggal', 'Jam Kerja', 'Jam Masuk', 'Jam Keluar', 'Jam Terlambat', 'Catatan']
+COL_HEADERS = ['Hari', 'Tanggal', 'Jam Kerja', 'Jam Masuk', 'Jam Keluar', 'Menit Terlambat', 'Catatan']
 
 
 def buat_sheet_individual_static(
@@ -421,12 +421,22 @@ def buat_sheet_individual_static(
             ws[f'B{r}'].number_format = 'DD-MM-YYYY'
 
         # ---- TOTAL row ----
-        ws.merge_cells(f'A{r_total}:G{r_total}')
+        ws.merge_cells(f'A{r_total}:E{r_total}')
         c = ws[f'A{r_total}']
         c.value = 'TOTAL'
         c.font = FONT_HEADER
         c.alignment = ALIGN_C0
         c.border = BORDER
+        for cl in ['B', 'C', 'D', 'E']:
+            ws[f'{cl}{r_total}'].border = BORDER
+
+        c = ws[f'F{r_total}']
+        c.value = f'=SUM(F{ds}:F{de})'
+        c.font = FONT_HEADER
+        c.border = BORDER
+        c.alignment = ALIGN_C0
+
+        ws[f'G{r_total}'].border = BORDER
 
         # ---- Signature label row ----
         r_sig_lbl = r_total + 3
