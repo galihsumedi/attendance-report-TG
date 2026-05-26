@@ -53,5 +53,4 @@ NAMA_LENGKAP: dict[str, str] = {
     'Joko':    'Joko Catur Setiono',
     'Yuli':    'Yuliansyah',
     'sunoko':  'Sunoko',
-    'gale': 'Galih Ramadhan Sumedi',
 }
