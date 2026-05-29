@@ -529,6 +529,7 @@ def buat_file_excel(
     li_refs = buat_sheet_individual_static(wb, laporan_individual)
     buat_sheet_rekapitulasi(wb, rekapitulasi, bulan_tahun, li_refs)
     buat_sheet_data_harian(wb, laporan_individual, daftar_nama)
+    wb['Data Harian'].sheet_state = 'hidden'
 
     sheet_order = ['Data Mentah', 'Rekapitulasi', 'Laporan Individual', 'Data Harian']
     for i, name in enumerate(sheet_order):
