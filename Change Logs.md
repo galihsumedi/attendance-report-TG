@@ -2,6 +2,14 @@
 
 ---
 
+## v2.23 — Hide Data Harian Sheet by Default
+
+### Feature:
+- The **Data Harian** sheet in the output Excel report is now hidden by default.
+  Users can still reveal it via Excel's Unhide option if needed.
+
+---
+
 ## v1.0 — Initial Release
 
 - Built the full app from scratch based on project specifications.
