@@ -1,13 +1,39 @@
 from __future__ import annotations
 
+import json
+import logging
 import math
-from datetime import datetime, time, timedelta
+import urllib.request
+from datetime import date, datetime, time, timedelta
 from calendar import monthrange
 from typing import Any
 
 import pandas as pd
 
 from nama_karyawan import NAMA_LENGKAP
+
+_CACHE_LIBUR: dict[int, dict[date, str]] = {}
+
+
+def ambil_hari_libur_nasional(year: int) -> dict[date, str]:
+    if year in _CACHE_LIBUR:
+        return _CACHE_LIBUR[year]
+    try:
+        url = f'https://date.nager.at/api/v3/PublicHolidays/{year}/ID'
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            if resp.status != 200:
+                raise ValueError(f'HTTP {resp.status}')
+            data = json.loads(resp.read().decode())
+        result = {
+            datetime.strptime(item['date'], '%Y-%m-%d').date(): item['localName']
+            for item in data
+        }
+        _CACHE_LIBUR[year] = result
+        return result
+    except Exception as e:
+        logging.warning(f'Gagal mengambil data hari libur nasional: {e}. Laporan dibuat tanpa penandaan hari libur.')
+        _CACHE_LIBUR[year] = {}
+        return {}
 
 JAM_MASUK_BATAS = time(8, 0, 0)
 HARI_INDONESIA = {
@@ -74,12 +100,15 @@ def tentukan_catatan_otomatis(
     scan1: time | None,
     scan2: time | None,
     scan3: time | None,
+    nama_libur: str | None = None,
 ) -> str:
     hari = tanggal.weekday()
     if hari == 5:
         return 'Sabtu'
     if hari == 6:
         return 'Minggu'
+    if nama_libur:
+        return nama_libur
     if scan1 is None and scan2 is None and scan3 is None:
         return 'Tidak ada scan'
     if scan1 is not None and scan2 is None and scan3 is None:
@@ -151,6 +180,8 @@ def proses_data_scanlog(path_file: str) -> dict[str, Any]:
                 'scan3': row['Scan3_parsed'],
             }
 
+        libur = ambil_hari_libur_nasional(tahun)
+
         detail_harian = []
         total_menit_terlambat = 0
         jumlah_hari_terlambat = 0
@@ -185,7 +216,10 @@ def proses_data_scanlog(path_file: str) -> dict[str, Any]:
                 else:
                     jam_terlambat_str = f"{menit_m} menit"
 
-            catatan_auto = tentukan_catatan_otomatis(tgl, scan1, scan2, scan3)
+            is_weekend = tgl.weekday() >= 5
+            is_holiday = tgl_date in libur and not is_weekend
+            nama_libur = libur.get(tgl_date) if is_holiday else None
+            catatan_auto = tentukan_catatan_otomatis(tgl, scan1, scan2, scan3, nama_libur)
             hari_nama = HARI_INDONESIA[tgl.weekday()]
 
             detail_harian.append({
@@ -198,7 +232,8 @@ def proses_data_scanlog(path_file: str) -> dict[str, Any]:
                 'menit_terlambat': menit_terlambat,
                 'catatan_otomatis': catatan_auto,
                 'catatan_manual': '',
-                'is_weekend': tgl.weekday() >= 5,
+                'is_weekend': is_weekend,
+                'is_holiday': is_holiday,
             })
 
         laporan_individual[pin] = {

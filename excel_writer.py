@@ -17,6 +17,7 @@ FONT_NORMAL = Font(name=TNR, size=12)
 FONT_MERAH  = Font(name=TNR, size=12, color='FF0000')
 FILL_HEADER  = PatternFill(start_color='D9E1F2', end_color='D9E1F2', fill_type='solid')
 FILL_WEEKEND = PatternFill(start_color='DCE6F1', end_color='DCE6F1', fill_type='solid')
+FILL_LIBUR   = PatternFill(start_color='FCE4D6', end_color='FCE4D6', fill_type='solid')
 
 THIN = Side(style='thin')
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
@@ -395,8 +396,13 @@ def buat_sheet_individual_static(
         for idx, d in enumerate(detail):
             r = ds + idx
             is_wknd = d['is_weekend']
-            font = FONT_MERAH if is_wknd else FONT_NORMAL
-            fill = FILL_WEEKEND if is_wknd else None
+            is_libur = d.get('is_holiday', False)
+            if is_wknd:
+                font, fill = FONT_MERAH, FILL_WEEKEND
+            elif is_libur:
+                font, fill = FONT_MERAH, FILL_LIBUR
+            else:
+                font, fill = FONT_NORMAL, None
 
             menit = d['menit_terlambat']
             row_vals = [
