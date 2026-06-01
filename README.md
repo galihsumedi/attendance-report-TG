@@ -61,8 +61,11 @@ This requires two environment variables to be set on the server (see Deployment 
 |---|---|
 | `GITHUB_TOKEN` | A GitHub Personal Access Token with `repo` (contents write) scope |
 | `GITHUB_REPO` | `galihsumedi/attendance-report-TG` |
+| `GITHUB_BRANCH` | Branch to write to — set to `v3.0` for the beta deployment |
+| `HR_PASSWORD_HASH` | bcrypt hash of the HR login password |
+| `SECRET_KEY` | Random secret key for Flask session signing |
 
-If these variables are not set, the app runs normally but new names are not persisted to GitHub — they apply only for the current server session.
+If `GITHUB_TOKEN` / `GITHUB_REPO` are not set, the app runs normally but employee changes are not persisted to GitHub — the employee list will reset on the next service restart.
 
 ---
 

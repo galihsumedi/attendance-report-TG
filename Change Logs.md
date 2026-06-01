@@ -35,6 +35,11 @@ Complete rewrite from a stateless upload-download tool into a database-backed we
 - **Catatan column** now shows: `[auto label] | [HR free-text note]` (e.g. `Izin | ijin keluarga`)
 - Employees listed **alphabetically by name** in both Laporan Individual and Rekapitulasi
 
+#### Employee list persistence across Render restarts
+- Any change to the employee list (add, rename, delete employee; add or remove alias; resolve unknown aliases on upload) automatically rewrites `nama_karyawan.py` and commits it to the `v3.0` branch on GitHub
+- On service restart, the empty DB re-seeds from the updated `nama_karyawan.py`, so the employee list is fully restored
+- Requires `GITHUB_TOKEN`, `GITHUB_REPO`, and `GITHUB_BRANCH=v3.0` env vars; silently skips if not configured (local dev unaffected)
+
 #### Bug fixes
 - Log Penyesuaian no longer shows phantom entries for employees who had no personal adjustments (was caused by bulk actions writing one audit row per employee)
 

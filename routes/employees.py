@@ -1,6 +1,7 @@
 from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
 from auth import login_required
 from database import get_db
+from services.github_service import sync_nama_karyawan
 from models import (
     get_all_employees,
     get_employee,
@@ -40,12 +41,14 @@ def new_form():
             flash('Nama lengkap tidak boleh kosong.', 'error')
             return render_template('employees/form.html', employee=None)
         try:
-            emp_id = create_employee(get_db(), nama)
+            db = get_db()
+            emp_id = create_employee(db, nama)
             if alias:
                 try:
-                    add_alias(get_db(), emp_id, alias)
+                    add_alias(db, emp_id, alias)
                 except Exception as e:
                     flash(f'Karyawan ditambahkan tapi alias gagal: {e}', 'warning')
+            sync_nama_karyawan(db)
             flash('Karyawan berhasil ditambahkan.', 'success')
             return redirect(url_for('employees.list_page'))
         except Exception as e:
@@ -67,6 +70,7 @@ def edit_form(emp_id):
         else:
             try:
                 update_employee(db, emp_id, nama)
+                sync_nama_karyawan(db)
                 flash('Data karyawan diperbarui.', 'success')
                 return redirect(url_for('employees.list_page'))
             except Exception as e:
@@ -81,6 +85,7 @@ def delete(emp_id):
     db = get_db()
     try:
         delete_employee(db, emp_id)
+        sync_nama_karyawan(db)
         flash('Karyawan dihapus.', 'success')
     except Exception as e:
         flash(f'Gagal menghapus: {e}', 'error')
@@ -95,7 +100,9 @@ def add_alias_route(emp_id):
         flash('Alias tidak boleh kosong.', 'error')
         return redirect(url_for('employees.edit_form', emp_id=emp_id))
     try:
-        add_alias(get_db(), emp_id, alias)
+        db = get_db()
+        add_alias(db, emp_id, alias)
+        sync_nama_karyawan(db)
         flash('Alias ditambahkan.', 'success')
     except Exception as e:
         flash(f'Gagal menambah alias: {e}', 'error')
@@ -110,6 +117,7 @@ def delete_alias_route(alias_id):
     emp_id = row['employee_id'] if row else None
     try:
         delete_alias(db, alias_id)
+        sync_nama_karyawan(db)
         flash('Alias dihapus.', 'success')
     except Exception as e:
         flash(f'Gagal menghapus alias: {e}', 'error')
