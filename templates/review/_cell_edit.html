@@ -1,7 +1,7 @@
 {% set masuk = day.adj_jam_masuk or day.raw_scan1 %}
 {% set keluar = day.adj_jam_keluar or day.raw_scan2 %}
 
-<div class="cell-edit" id="cell-edit-{{ day.id }}">
+<div class="cell-edit" id="cell-edit-{{ day.id }}" onclick="event.stopPropagation()">
   <div style="font-size:0.72rem;color:#888;margin-bottom:6px;font-weight:600;">
     {{ day.tanggal[8:10] }}-{{ day.tanggal[5:7] }}-{{ day.tanggal[:4] }} · {{ day.nama }}
   </div>
