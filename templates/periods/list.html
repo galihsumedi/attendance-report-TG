@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Periode{% endblock %}
+{% block content %}
+<div class="flex-between" style="margin-bottom:16px;">
+  <h1>Periode Laporan</h1>
+  <a href="{{ url_for('upload.upload_page') }}" class="btn btn-primary">+ Upload Baru</a>
+</div>
+
+{% if periods %}
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>Periode</th>
+        <th>File Sumber</th>
+        <th>Status</th>
+        <th>Dibuat</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in periods %}
+    <tr>
+      <td><strong>{{ p.bulan_tahun }}</strong></td>
+      <td class="text-muted">{{ p.source_file or '-' }}</td>
+      <td>
+        <span class="badge badge-{{ p.status }}">
+          {{ 'Draft' if p.status == 'draft' else 'Finalisasi' }}
+        </span>
+      </td>
+      <td class="text-muted">{{ p.created_at[:10] }}</td>
+      <td>
+        <div class="flex">
+          <a href="{{ url_for('review.review_page', period_id=p.id) }}" class="btn btn-secondary btn-sm">Review</a>
+          <a href="{{ url_for('export.download_excel', period_id=p.id) }}" class="btn btn-secondary btn-sm">Export</a>
+          {% if p.status == 'draft' %}
+          <form method="POST" action="{{ url_for('periods.delete', period_id=p.id) }}"
+                onsubmit="return confirm('Hapus periode {{ p.bulan_tahun }}?')">
+            <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+          </form>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:48px;">
+  <p class="text-muted">Belum ada periode. <a href="{{ url_for('upload.upload_page') }}">Upload scanlog pertama.</a></p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if employee else 'Tambah' }} Karyawan{% endblock %}
+{% block content %}
+<div style="max-width:520px;">
+  <h1>{{ 'Edit' if employee else 'Tambah' }} Karyawan</h1>
+
+  <div class="card mt-4">
+    <form method="POST">
+      <div class="form-group">
+        <label>Nama Lengkap</label>
+        <input type="text" name="nama_lengkap" value="{{ employee.nama_lengkap if employee else '' }}" required placeholder="Nama lengkap sesuai dokumen">
+      </div>
+      {% if not employee %}
+      <div class="form-group">
+        <label>Alias Fingerprint (opsional)</label>
+        <input type="text" name="alias" placeholder="Nama yang muncul di mesin absensi">
+      </div>
+      {% endif %}
+      <div class="flex">
+        <button type="submit" class="btn btn-primary">Simpan</button>
+        <a href="{{ url_for('employees.list_page') }}" class="btn btn-secondary">Batal</a>
+      </div>
+    </form>
+  </div>
+
+  {% if employee and aliases is defined %}
+  <div class="card mt-4">
+    <h2>Alias Fingerprint</h2>
+    <p class="text-muted" style="margin-bottom:12px;">Nama yang dikenali dari mesin absensi untuk karyawan ini.</p>
+
+    {% if aliases %}
+    <table style="margin-bottom:16px;">
+      <thead><tr><th style="text-align:left;">Alias</th><th>Hapus</th></tr></thead>
+      <tbody>
+      {% for a in aliases %}
+      <tr>
+        <td><span class="fp-name">{{ a.alias }}</span></td>
+        <td>
+          <form method="POST" action="{{ url_for('employees.delete_alias_route', alias_id=a.id) }}"
+                onsubmit="return confirm('Hapus alias {{ a.alias }}?')">
+            <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('employees.add_alias_route', emp_id=employee.id) }}" class="flex">
+      <input type="text" name="alias" placeholder="Alias baru..." style="flex:1;" required>
+      <button type="submit" class="btn btn-secondary btn-sm">Tambah Alias</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

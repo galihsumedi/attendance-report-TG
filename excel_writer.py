@@ -347,7 +347,7 @@ def buat_sheet_individual_static(
     ws = wb.create_sheet(title='Laporan Individual')
     ws.sheet_view.showGridLines = False
 
-    pins = sorted(laporan_individual.keys())
+    pins = sorted(laporan_individual.keys(), key=lambda p: laporan_individual[p]['nama'].upper())
     li_refs: dict[int, dict] = {}
 
     R = 1
@@ -478,6 +478,12 @@ def buat_sheet_individual_static(
         # ---- Notes lines ----
         r_notes = r_total + 10
         li_refs[pin] = {}
+        count_map = {
+            'cuti':     data.get('count_cuti', 0),
+            'sakit':    data.get('count_sakit', 0),
+            'izin':     data.get('count_izin', 0),
+            'dinas':    data.get('count_dinas', 0),
+        }
         for i, (key, label, unit) in enumerate(NOTES_LINES):
             r_note = r_notes + i
             ws.merge_cells(f'A{r_note}:B{r_note}')
@@ -493,6 +499,8 @@ def buat_sheet_individual_static(
             c = ws[f'D{r_note}']
             if key == 'terlambat':
                 c.value = f'=SUM(F{ds}:F{de})'
+            elif key in count_map and count_map[key] > 0:
+                c.value = count_map[key]
             c.font = FONT_NORMAL
             c.number_format = '0'
             c.alignment = ALIGN_C0
@@ -510,6 +518,37 @@ def buat_sheet_individual_static(
         ws.column_dimensions[kol].width = w
 
     return li_refs
+
+
+# ---------------------------------------------------------------------------
+# Sheet 5 — Log Penyesuaian (audit trail)
+# ---------------------------------------------------------------------------
+
+def buat_sheet_log_penyesuaian(wb: Workbook, adjustments) -> None:
+    ws = wb.create_sheet(title='Log Penyesuaian')
+    headers = ['No', 'Tanggal', 'Karyawan', 'Tipe', 'Catatan', 'Author', 'Waktu']
+    for ci, h in enumerate(headers, 1):
+        c = ws.cell(row=1, column=ci, value=h)
+        c.font = FONT_HEADER
+        c.fill = FILL_HEADER
+        c.border = BORDER
+        c.alignment = ALIGN_C0
+
+    for idx, a in enumerate(adjustments, 1):
+        nama = a['nama_lengkap'] if 'nama_lengkap' in a.keys() and a['nama_lengkap'] else 'Semua'
+        row_vals = [
+            idx, a['tanggal_from'], nama,
+            a['tipe'], a['catatan'] or '', a['author'],
+            a['created_at'][:16] if a['created_at'] else '',
+        ]
+        for ci, val in enumerate(row_vals, 1):
+            c = ws.cell(row=idx + 1, column=ci, value=val)
+            c.font = FONT_NORMAL
+            c.border = BORDER
+            c.alignment = ALIGN_L if ci in (3, 4, 5) else ALIGN_C0
+
+    for ci in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(ci)].width = [5, 14, 28, 20, 32, 16, 18][ci - 1]
 
 
 # ---------------------------------------------------------------------------

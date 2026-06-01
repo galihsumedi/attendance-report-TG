@@ -1,0 +1,169 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #2c5f2d;
+  --green-dark: #1e4620;
+  --blue-light: #f0f7ff;
+  --gray-bg: #f5f5f5;
+  --gray-border: #ddd;
+  --red: #c62828;
+  --yellow-bg: #fff8e1;
+  --yellow-border: #ffe082;
+}
+
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--gray-bg); color: #1a1a1a; font-size: 14px; }
+
+/* ---- Nav ---- */
+nav { background: var(--green); color: white; padding: 0 24px; display: flex; align-items: center; gap: 24px; height: 52px; }
+nav a { color: white; text-decoration: none; font-size: 0.9rem; padding: 6px 10px; border-radius: 6px; }
+nav a:hover, nav a.active { background: rgba(255,255,255,0.15); }
+nav .brand { font-weight: 700; font-size: 1rem; margin-right: 8px; }
+nav .spacer { flex: 1; }
+
+/* ---- Layout ---- */
+.page { max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
+.card { background: white; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); padding: 28px; }
+
+/* ---- Flash ---- */
+.flash-list { margin-bottom: 16px; list-style: none; }
+.flash-item { padding: 10px 14px; border-radius: 7px; font-size: 0.88rem; margin-bottom: 6px; }
+.flash-item.error   { background: #fdecea; color: var(--red); border: 1px solid #f5c6cb; }
+.flash-item.success { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+.flash-item.warning { background: var(--yellow-bg); color: #7a5c00; border: 1px solid var(--yellow-border); }
+
+/* ---- Buttons ---- */
+.btn { display: inline-block; padding: 9px 18px; border-radius: 7px; font-size: 0.88rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: background 0.15s; }
+.btn-primary { background: var(--green); color: white; }
+.btn-primary:hover { background: var(--green-dark); }
+.btn-danger { background: #c62828; color: white; }
+.btn-danger:hover { background: #b71c1c; }
+.btn-secondary { background: #e0e0e0; color: #333; }
+.btn-secondary:hover { background: #bdbdbd; }
+.btn-sm { padding: 5px 12px; font-size: 0.82rem; }
+.btn-full { width: 100%; display: block; text-align: center; padding: 12px; }
+
+/* ---- Forms ---- */
+.form-group { margin-bottom: 16px; }
+label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.88rem; color: #444; }
+input[type=text], input[type=password], input[type=number], input[type=time], select, textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--gray-border); border-radius: 7px;
+  font-size: 0.88rem; transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: #4a90d9; }
+
+/* ---- Tables ---- */
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #e0e0e0; padding: 7px 10px; }
+th { background: #f0f4f8; font-weight: 600; font-size: 0.82rem; text-align: center; white-space: nowrap; }
+td { font-size: 0.82rem; vertical-align: middle; }
+tbody tr:hover { background: #fafafa; }
+
+/* ---- Upload area ---- */
+.upload-area {
+  border: 2px dashed #ccc; border-radius: 10px; padding: 40px 20px;
+  text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;
+}
+.upload-area:hover, .upload-area.drag-over { border-color: #4a90d9; background: var(--blue-light); }
+.upload-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.file-name { color: #4a90d9; font-weight: 600; margin-top: 8px; font-size: 0.88rem; }
+
+/* ---- Review grid ---- */
+.grid-wrap { overflow-x: auto; }
+.review-table { border-collapse: collapse; min-width: 600px; }
+/* Column widths — must match the sticky left offsets below */
+:root {
+  --col-emp: 150px;
+  --col-sum2: 68px;
+  --col-sum3: 68px;
+}
+
+.review-table th { position: sticky; top: 0; z-index: 10; background: #f0f4f8; padding: 5px 4px; font-size: 0.75rem; min-width: 72px; }
+.review-table td { padding: 2px; vertical-align: top; }
+
+/* Frozen column 1 — Karyawan */
+.review-table th.emp-col,
+.review-table td.emp-col {
+  position: sticky; left: 0; z-index: 15; background: #f0f4f8;
+  min-width: var(--col-emp); width: var(--col-emp);
+  font-weight: 600; font-size: 0.82rem; padding: 4px 8px;
+}
+.review-table td.emp-col { background: white; z-index: 5; }
+.review-table tr:hover td.emp-col { background: #fafafa; }
+
+/* Frozen column 2 — Menit Terlambat */
+.review-table th.sum-col-2,
+.review-table td.sum-col-2 {
+  position: sticky; left: var(--col-emp); z-index: 14; background: #f0f4f8;
+  min-width: var(--col-sum2); width: var(--col-sum2);
+  border-right: 1px solid #ccc;
+}
+.review-table td.sum-col-2 { background: #fafef8; z-index: 4; }
+.review-table tr:hover td.sum-col-2 { background: #f4faf4; }
+
+/* Frozen column 3 — HK Tdk Scan */
+.review-table th.sum-col-3,
+.review-table td.sum-col-3 {
+  position: sticky; left: calc(var(--col-emp) + var(--col-sum2)); z-index: 13; background: #f0f4f8;
+  min-width: var(--col-sum3); width: var(--col-sum3);
+  border-right: 2px solid #bbb;
+}
+.review-table td.sum-col-3 { background: #fffdf8; z-index: 3; }
+.review-table tr:hover td.sum-col-3 { background: #fdfaf2; }
+
+/* th frozen headers need higher z-index (top + left sticky) */
+.review-table th.emp-col  { z-index: 25; }
+.review-table th.sum-col-2 { z-index: 24; }
+.review-table th.sum-col-3 { z-index: 23; }
+
+/* ---- Cell ---- */
+.cell-inner { padding: 4px 5px; border-radius: 4px; min-height: 48px; cursor: pointer; font-size: 0.75rem; transition: background 0.1s; }
+.cell-inner:hover { background: var(--blue-light); }
+.cell-time { color: #333; display: block; }
+.cell-badge { display: inline-block; border-radius: 10px; padding: 1px 6px; font-size: 0.7rem; font-weight: 600; margin-top: 2px; }
+.badge-ok     { background: #e8f5e9; color: #2e7d32; }
+.badge-warn   { background: #fff8e1; color: #7a5c00; }
+.badge-late   { background: #fdecea; color: var(--red); }
+.badge-libur  { background: #e8eef8; color: #546e7a; }
+.badge-noscan { background: #fff3e0; color: #e65100; }
+.cell-status  { font-size: 0.68rem; color: #888; display: block; margin-top: 1px; }
+.cell-weekend { background: #f0f4fc; }
+.cell-holiday { background: #fff3e0; }
+.cell-adj     { border-left: 3px solid #4a90d9; }
+
+/* ---- Edit form inside cell ---- */
+.cell-edit { padding: 6px; background: white; border: 1px solid #4a90d9; border-radius: 6px; min-width: 200px; z-index: 100; }
+.cell-edit input, .cell-edit select, .cell-edit textarea { margin-bottom: 4px; font-size: 0.78rem; padding: 5px 8px; }
+.cell-edit .btn { font-size: 0.75rem; padding: 4px 10px; }
+
+/* ---- Preflight card ---- */
+.preflight-card { background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
+.preflight-card h3 { color: #2e7d32; margin-bottom: 8px; }
+.preflight-stat { font-size: 0.9rem; margin-bottom: 4px; }
+.preflight-stat span { font-weight: 700; }
+
+/* ---- Badge ---- */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+.badge-draft     { background: #fff8e1; color: #7a5c00; }
+.badge-finalized { background: #e8f5e9; color: #2e7d32; }
+
+/* ---- Misc ---- */
+h1 { font-size: 1.4rem; margin-bottom: 4px; }
+h2 { font-size: 1.1rem; margin-bottom: 12px; color: #333; }
+.text-muted { color: #888; font-size: 0.82rem; }
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mt-8 { margin-top: 32px; }
+.flex { display: flex; align-items: center; gap: 8px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.fp-name { font-family: 'Courier New', monospace; background: #f4f4f4; padding: 6px 10px; border-radius: 5px; font-size: 0.85rem; }
+
+/* ---- Bulk action bar ---- */
+.bulk-bar { background: #f0f4f8; border: 1px solid #d0d8e4; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
+.bulk-bar form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.bulk-bar .form-group { margin-bottom: 0; }
+.bulk-bar label { font-size: 0.78rem; }
+.bulk-bar input, .bulk-bar select { font-size: 0.82rem; padding: 6px 10px; }
+
+/* ---- Adj history ---- */
+.adj-history { font-size: 0.7rem; color: #888; margin-top: 3px; }
+.adj-item { background: #f8f9ff; border-left: 2px solid #4a90d9; padding: 2px 5px; margin-top: 2px; border-radius: 2px; }

@@ -1,6 +1,8 @@
-# Laporan Kehadiran Karyawan — v2.3
+# Laporan Kehadiran Karyawan — v3.0 *(beta)*
 
-Web application for processing employee attendance data from fingerprint scanlog files into formatted Excel reports. New employee names detected in an uploaded file are flagged on-screen for the user to resolve before the report is generated, and are automatically committed back to the repository.
+> **v3.0 is currently in beta and still being actively worked on.** Features and behaviour may change. See [`Change Logs.md`](Change%20Logs.md) for what has been implemented and what is still planned.
+
+Web application for processing employee attendance data from fingerprint scanlog files into a database-backed review and export workflow. Upload a scanlog, review and correct attendance inline, then export a formatted Excel report on demand.
 
 ---
 

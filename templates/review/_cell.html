@@ -1,0 +1,42 @@
+{% set is_adj = day.adj_jam_masuk or day.adj_jam_keluar or day.catatan_manual or day.adj_keterlambatan or day.adj_absen %}
+{% set masuk = day.adj_jam_masuk or day.raw_scan1 %}
+
+{% if oob_pin is defined %}
+<span id="summary-{{ oob_pin }}" hx-swap-oob="outerHTML:#summary-{{ oob_pin }}">
+  {% if oob_total > 0 %}<span style="color:#c62828;">{{ oob_total }}</span>{% else %}<span style="color:#888;">0</span>{% endif %}
+</span>
+<span id="noscan-{{ oob_pin }}" hx-swap-oob="outerHTML:#noscan-{{ oob_pin }}">
+  {% if oob_noscan > 0 %}<span style="color:#e65100;">{{ oob_noscan }}</span>{% else %}<span style="color:#888;">0</span>{% endif %}
+</span>
+{% endif %}
+
+<div class="cell-inner {% if is_adj %}cell-adj{% endif %}"
+     hx-get="{{ url_for('review.cell_edit_form', period_id=period_id, day_id=day.id) }}"
+     hx-target="#day-{{ day.id }}"
+     hx-swap="innerHTML">
+  {% if masuk and not day.is_weekend and not day.is_holiday %}
+    <span class="cell-time">{{ masuk[:5] }}</span>
+  {% endif %}
+
+  {% if day.is_weekend or day.is_holiday %}
+    <span class="cell-badge badge-libur">Libur</span>
+  {% elif not masuk and not day.adj_absen %}
+    <span class="cell-badge badge-noscan">Tdk ada scan</span>
+  {% elif day.menit_terlambat > 15 %}
+    <span class="cell-badge badge-late">{{ day.menit_terlambat }} mnt</span>
+  {% elif day.menit_terlambat > 0 %}
+    <span class="cell-badge badge-warn">{{ day.menit_terlambat }} mnt</span>
+  {% else %}
+    <span class="cell-badge badge-ok">Tepat</span>
+  {% endif %}
+
+  {% if day.status_hari and not day.is_weekend and not day.is_holiday %}
+    <span class="cell-status">{{ day.status_hari }}</span>
+  {% endif %}
+  {% if day.adj_keterlambatan and not day.is_weekend and not day.is_holiday %}
+    <span class="cell-status" style="color:#1565c0;">{{ day.adj_keterlambatan }}</span>
+  {% endif %}
+  {% if day.adj_absen and not day.is_weekend and not day.is_holiday %}
+    <span class="cell-status" style="color:#2e7d32;">{{ day.adj_absen }}</span>
+  {% endif %}
+</div>

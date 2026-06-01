@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Karyawan{% endblock %}
+{% block content %}
+<div class="flex-between" style="margin-bottom:16px;">
+  <h1>Daftar Karyawan</h1>
+  <a href="{{ url_for('employees.new_form') }}" class="btn btn-primary">+ Tambah</a>
+</div>
+
+<div class="card">
+  {% if employees %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th style="text-align:left;">Nama Lengkap</th>
+        <th style="text-align:left;">Alias Fingerprint</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for emp in employees %}
+    <tr>
+      <td style="text-align:center;color:#888;">{{ loop.index }}</td>
+      <td><strong>{{ emp.nama_lengkap }}</strong></td>
+      <td>
+        {% for a in alias_map.get(emp.id, []) %}
+          <span class="fp-name" style="display:inline-block;margin:1px;">{{ a.alias }}</span>
+        {% else %}
+          <span class="text-muted">—</span>
+        {% endfor %}
+      </td>
+      <td>
+        <div class="flex" style="justify-content:center;">
+          <a href="{{ url_for('employees.edit_form', emp_id=emp.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+          <form method="POST" action="{{ url_for('employees.delete', emp_id=emp.id) }}"
+                onsubmit="return confirm('Hapus karyawan {{ emp.nama_lengkap }}? Semua data absensi yang terhubung akan ikut terhapus.')">
+            <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted" style="text-align:center;padding:32px;">Belum ada karyawan terdaftar.</p>
+  {% endif %}
+</div>
+{% endblock %}

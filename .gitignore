@@ -1,1 +1,9 @@
 .venv/
+.env
+data/
+uploads/
+output/
+__pycache__/
+*.pyc
+.DS_Store
+.claude/
