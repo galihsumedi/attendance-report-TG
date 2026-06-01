@@ -42,6 +42,7 @@ Complete rewrite from a stateless upload-download tool into a database-backed we
 
 #### Bug fixes
 - Log Penyesuaian no longer shows phantom entries for employees who had no personal adjustments (was caused by bulk actions writing one audit row per employee)
+- Dropdown menus in the cell edit form (Penyesuaian Keterlambatan, Penyesuaian Absen) now open correctly — clicks inside the form were bubbling up to the parent `<td>`'s HTMX handler, causing the form to reload before any dropdown could open
 
 ---
 
