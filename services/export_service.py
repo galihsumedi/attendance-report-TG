@@ -118,6 +118,10 @@ def buat_excel_dari_db(
     for pin in sorted(laporan_individual.keys(), key=lambda p: laporan_individual[p]['nama'].upper()):
         emp_type = laporan_individual[pin]['employee_type']
         is_keamanan = emp_type in ('keamanan', 'keamanan_malam')
+        is_night = emp_type == 'keamanan_malam'
+        # Night guards are rostered every calendar day; HOK = days in month
+        # minus approved leave (punches only drive Masuk/Keluar display).
+        leave_malam = 0
         detail_list = []
         for tgl in all_dates:
             tgl_str = tgl.strftime('%Y-%m-%d')
@@ -146,9 +150,16 @@ def buat_excel_dari_db(
                 adj_ket = ''
                 adj_abs = ''
 
-            # HOK: count days with any scan for security staff
-            if is_keamanan and jam_masuk is not None:
+            # HOK for day-shift security (keamanan): count days with a scan.
+            if is_keamanan and not is_night and jam_masuk is not None:
                 laporan_individual[pin]['hok'] += 1
+            # Night guards (keamanan_malam): tally approved leave to deduct
+            # from a full-month roster.
+            if is_night and (
+                adj_abs in ('cuti', 'cuti_bersama', 'sakit', 'izin')
+                or adj_ket == 'cuti_bersama'
+            ):
+                leave_malam += 1
 
             # Accumulate absence counts (workdays only, standard employees)
             if not is_keamanan and not is_weekend and not is_holiday:
@@ -203,6 +214,8 @@ def buat_excel_dari_db(
                 'nama_libur': nama_libur,
             })
 
+        if is_night:
+            laporan_individual[pin]['hok'] = jumlah_hari - leave_malam
         laporan_individual[pin]['detail'] = detail_list
         rekapitulasi_map[pin]['hok'] = laporan_individual[pin]['hok']
 
