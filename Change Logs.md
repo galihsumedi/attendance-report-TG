@@ -55,6 +55,10 @@ Complete rewrite from a stateless upload-download tool into a database-backed we
   - Lists each Petugas Keamanan (alphabetical) with their HOK count
   - Followed by a signature block (Dibuat Oleh / Diperiksa Oleh / Diketahui Oleh) with date and signer names
 
+#### Penyesuaian Absen — fixes and new option (2 June 2026)
+- Added **Alasan Lainnya** to Penyesuaian Absen dropdown (exempts from HK Tdk Scan; shown in Catatan column on export)
+- Fixed: Dinas Lapangan atau Kerja set via Penyesuaian Absen now correctly increments the Dinas count in Laporan Individual footer (previously only counted when set via Penyesuaian Keterlambatan)
+
 #### Export — Rekapitulasi column header corrections and number formatting (2 June 2026)
 - Renamed column headers: Total → Total Denda, Sangsi → Sanksi, Jumlah → Jumlah Sanksi
 - Denda/Menit, Total Denda, and Jumlah Sanksi columns now formatted to zero decimal places (`#,##0`); underlying values unchanged

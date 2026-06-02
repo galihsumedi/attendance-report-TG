@@ -158,13 +158,15 @@ def buat_excel_dari_db(
                     laporan_individual[pin]['count_sakit'] += 1
                 elif adj_abs == 'izin':
                     laporan_individual[pin]['count_izin'] += 1
-                if adj_ket == 'dinas_lapangan':
+                if adj_ket == 'dinas_lapangan' or adj_abs == 'dinas_lapangan':
                     laporan_individual[pin]['count_dinas'] += 1
 
             # Build catatan: combine auto + adj labels
             catatan_parts = [catatan_otomatis] if catatan_otomatis else []
             ADJ_ABS_LABEL = {
                 'cuti': 'Cuti', 'izin': 'Izin', 'sakit': 'Sakit',
+                'dinas_lapangan': 'Dinas Lapangan',
+                'alasan_lainnya': 'Alasan Lainnya',
                 'koreksi_scan': 'Koreksi Scan', 'cuti_bersama': 'Cuti Bersama',
             }
             ADJ_KET_LABEL = {

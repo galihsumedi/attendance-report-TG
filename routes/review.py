@@ -39,6 +39,7 @@ ABSEN_CHOICES = [
     ('dinas_lapangan', 'Dinas Lapangan atau Kerja'),
     ('izin', 'Izin'),
     ('sakit', 'Sakit'),
+    ('alasan_lainnya', 'Alasan Lainnya'),
     ('koreksi_scan', 'Koreksi Scan'),
 ]
 
