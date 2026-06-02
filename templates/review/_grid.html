@@ -1,0 +1,80 @@
+{% macro cell_badge(day) %}
+  {% set masuk = day.adj_jam_masuk or day.raw_scan1 %}
+  {% if day.is_weekend or day.is_holiday %}
+    <span class="cell-badge badge-libur">Libur</span>
+  {% elif not masuk and not day.adj_absen %}
+    <span class="cell-badge badge-noscan">Tdk ada scan</span>
+  {% elif day.menit_terlambat > 15 %}
+    <span class="cell-badge badge-late">{{ day.menit_terlambat }} mnt</span>
+  {% elif day.menit_terlambat > 0 %}
+    <span class="cell-badge badge-warn">{{ day.menit_terlambat }} mnt</span>
+  {% else %}
+    <span class="cell-badge badge-ok">Tepat</span>
+  {% endif %}
+{% endmacro %}
+
+<div class="grid-wrap">
+<table class="review-table">
+  <thead>
+    <tr>
+      <th class="emp-col">Karyawan</th>
+      <th class="sum-col sum-col-2" title="Total menit terlambat">Menit<br>Terlambat</th>
+      <th class="sum-col sum-col-3" title="Hari kerja tanpa scan masuk/keluar">HK Tdk<br>Scan</th>
+      {% for tgl in all_dates %}
+      <th title="{{ tgl.strftime('%A, %d %B %Y') }}"
+          style="{% if tgl.weekday() >= 5 %}background:#e8eef8;{% endif %}">
+        <div>{{ ['Sen','Sel','Rab','Kam','Jum','Sab','Min'][tgl.weekday()] }}</div>
+        <div>{{ tgl.day }}</div>
+      </th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in grid %}
+    {% set emp = row.emp %}
+    <tr>
+      <td class="emp-col" title="{{ emp.jabatan }} — {{ emp.departemen }}">
+        {{ emp.nama }}
+        <div class="text-muted" style="font-size:0.72rem;">{{ emp.jabatan or '' }}</div>
+      </td>
+
+      <td class="sum-col sum-col-2" style="text-align:center;font-weight:600;">
+        <span id="summary-{{ emp.pin }}">
+          {% if row.total_menit > 0 %}<span style="color:#c62828;">{{ row.total_menit }}</span>{% else %}<span style="color:#888;">0</span>{% endif %}
+        </span>
+      </td>
+
+      <td class="sum-col sum-col-3" style="text-align:center;font-weight:600;">
+        <span id="noscan-{{ emp.pin }}">
+          {% if row.noscan_count > 0 %}<span style="color:#e65100;">{{ row.noscan_count }}</span>{% else %}<span style="color:#888;">0</span>{% endif %}
+        </span>
+      </td>
+
+      {% for day in row.days %}
+        {% if day %}
+          {% set is_adj = day.adj_jam_masuk or day.adj_jam_keluar or day.catatan_manual %}
+          <td id="day-{{ day.id }}"
+              class="{% if day.is_weekend %}cell-weekend{% elif day.is_holiday %}cell-holiday{% endif %}"
+              hx-get="{{ url_for('review.cell_edit_form', period_id=period.id, day_id=day.id) }}"
+              hx-target="#day-{{ day.id }}"
+              hx-swap="innerHTML">
+            <div class="cell-inner {% if is_adj %}cell-adj{% endif %}">
+              {% set masuk = day.adj_jam_masuk or day.raw_scan1 %}
+              {% if masuk and not day.is_weekend and not day.is_holiday %}
+                <span class="cell-time">{{ masuk[:5] }}</span>
+              {% endif %}
+              {{ cell_badge(day) }}
+              {% if day.status_hari and day.status_hari not in ('','Tidak ada scan','Hanya scan masuk','3 scan terdeteksi') and not day.is_weekend and not day.is_holiday %}
+                <span class="cell-status">{{ day.status_hari }}</span>
+              {% endif %}
+            </div>
+          </td>
+        {% else %}
+          <td><div class="cell-inner" style="color:#eee;">—</div></td>
+        {% endif %}
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>

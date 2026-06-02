@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Pengaturan{% endblock %}
+{% block content %}
+<div style="max-width:540px;">
+  <h1>Pengaturan</h1>
+  <p class="text-muted mt-2">Aturan keterlambatan dan denda. Perubahan akan menghitung ulang semua periode draft.</p>
+
+  <div class="card mt-4">
+    <form method="POST" action="{{ url_for('settings.settings_save') }}">
+      {% for key, label, ftype, default in fields %}
+      <div class="form-group">
+        <label>{{ label }}</label>
+        {% if ftype == 'checkbox' %}
+          <input type="checkbox" name="{{ key }}" value="1" {{ 'checked' if settings.get(key, default) == '1' }}>
+        {% else %}
+          <input type="{{ ftype }}" name="{{ key }}"
+                 value="{{ settings.get(key, default) }}"
+                 {% if ftype == 'number' %}min="0" step="1"{% endif %}>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

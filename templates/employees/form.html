@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if employee else 'Tambah' }} Karyawan{% endblock %}
+{% block content %}
+<div style="max-width:520px;">
+  <h1>{{ 'Edit' if employee else 'Tambah' }} Karyawan</h1>
+
+  <div class="card mt-4">
+    <form method="POST">
+      <div class="form-group">
+        <label>Nama Lengkap</label>
+        <input type="text" name="nama_lengkap" value="{{ employee.nama_lengkap if employee else '' }}" required placeholder="Nama lengkap sesuai dokumen">
+      </div>
+      <div class="form-group">
+        <label>Tipe Karyawan</label>
+        <select name="employee_type">
+          <option value="standard" {% if not employee or employee.employee_type == 'standard' %}selected{% endif %}>Karyawan Standar</option>
+          <option value="keamanan" {% if employee and employee.employee_type == 'keamanan' %}selected{% endif %}>Petugas Keamanan</option>
+          <option value="keamanan_malam" {% if employee and employee.employee_type == 'keamanan_malam' %}selected{% endif %}>Petugas Keamanan (Shift Malam)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Denda / Menit <span style="color:#888;font-weight:normal;font-size:0.75rem;">(Rp per menit terlambat)</span></label>
+        <input type="number" name="denda_per_menit" step="0.0001" min="0"
+               value="{{ employee.denda_per_menit if employee else '' }}" placeholder="0">
+      </div>
+      {% if not employee %}
+      <div class="form-group">
+        <label>Alias Fingerprint (opsional)</label>
+        <input type="text" name="alias" placeholder="Nama yang muncul di mesin absensi">
+      </div>
+      {% endif %}
+      <div class="flex">
+        <button type="submit" class="btn btn-primary">Simpan</button>
+        <a href="{{ url_for('employees.list_page') }}" class="btn btn-secondary">Batal</a>
+      </div>
+    </form>
+  </div>
+
+  {% if employee and aliases is defined %}
+  <div class="card mt-4">
+    <h2>Alias Fingerprint</h2>
+    <p class="text-muted" style="margin-bottom:12px;">Nama yang dikenali dari mesin absensi untuk karyawan ini.</p>
+
+    {% if aliases %}
+    <table style="margin-bottom:16px;">
+      <thead><tr><th style="text-align:left;">Alias</th><th>Hapus</th></tr></thead>
+      <tbody>
+      {% for a in aliases %}
+      <tr>
+        <td><span class="fp-name">{{ a.alias }}</span></td>
+        <td>
+          <form method="POST" action="{{ url_for('employees.delete_alias_route', alias_id=a.id) }}"
+                onsubmit="return confirm('Hapus alias {{ a.alias }}?')">
+            <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('employees.add_alias_route', emp_id=employee.id) }}" class="flex">
+      <input type="text" name="alias" placeholder="Alias baru..." style="flex:1;" required>
+      <button type="submit" class="btn btn-secondary btn-sm">Tambah Alias</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

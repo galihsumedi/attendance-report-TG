@@ -104,8 +104,8 @@ def buat_sheet_rekapitulasi(
         'D': 'Sakit',
         'E': 'Izin',
         'I': 'Jumlah\nDalam Menit',
-        'K': 'Total',
-        'M': 'Jumlah',
+        'K': 'Total Denda',
+        'M': 'Jumlah Sanksi',
     }
     for kol, label in span_two_rows.items():
         ws[f'{kol}4'].value = label
@@ -138,8 +138,8 @@ def buat_sheet_rekapitulasi(
     _header_cell(ws, 'J4', 'Denda/Menit')
     _header_cell(ws, 'J5', 'Rp.')
 
-    # L: two-row label (Sangsi / 20 X), not merged
-    _header_cell(ws, 'L4', 'Sangsi')
+    # L: two-row label (Sanksi / 20 X), not merged
+    _header_cell(ws, 'L4', 'Sanksi')
     _header_cell(ws, 'L5', '20 X')
 
     # ---- Data rows ----
@@ -166,9 +166,11 @@ def buat_sheet_rekapitulasi(
             c.border = BORDER
             c.alignment = ALIGN_C0
 
-        # J: Denda/Menit — user fills manually
-        c = ws.cell(row=r, column=10, value=None)
+        # J: Denda/Menit — from employee record
+        denda = k.get('denda_per_menit') or None
+        c = ws.cell(row=r, column=10, value=denda)
         c.font = FONT_NORMAL
+        c.number_format = '#,##0'
         c.border = BORDER
         c.alignment = ALIGN_C0
 
@@ -222,6 +224,76 @@ def buat_sheet_rekapitulasi(
     }
     for kol, w in lebar.items():
         ws.column_dimensions[kol].width = w
+
+    # ---- HOK section (Petugas Keamanan only) ----
+    security = sorted(
+        [k for k in rekapitulasi if k.get('employee_type') in ('keamanan', 'keamanan_malam')],
+        key=lambda x: x['nama'].upper(),
+    )
+    if security:
+        r_hok = 6 + len(rekapitulasi) + 2
+
+        ws[f'A{r_hok}'].value = 'HOK Petugas Keamanan'
+        ws[f'A{r_hok}'].font = FONT_HEADER
+        r_hok += 1
+
+        for k in security:
+            ws[f'B{r_hok}'].value = k['nama']
+            ws[f'B{r_hok}'].font = FONT_NORMAL
+            ws[f'B{r_hok}'].alignment = ALIGN_L
+            ws[f'C{r_hok}'].value = k['hok']
+            ws[f'C{r_hok}'].font = FONT_NORMAL
+            ws[f'C{r_hok}'].alignment = ALIGN_C0
+            ws[f'D{r_hok}'].value = 'HOK'
+            ws[f'D{r_hok}'].font = FONT_NORMAL
+            ws[f'D{r_hok}'].alignment = ALIGN_L
+            r_hok += 1
+
+        r_hok += 1  # blank gap before signature
+
+        # Date line
+        from datetime import date as _date
+        _BULAN_ID = [
+            '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+        ]
+        _today = _date.today()
+        today_str = f'{_today.day:02d} {_BULAN_ID[_today.month]} {_today.year}'
+        ws.merge_cells(f'I{r_hok}:M{r_hok}')
+        c = ws[f'I{r_hok}']
+        c.value = f'Samarinda, {today_str}'
+        c.font = FONT_NORMAL
+        c.alignment = ALIGN_L
+        r_hok += 1
+
+        # Signature labels
+        ws.merge_cells(f'A{r_hok}:D{r_hok}')
+        ws.merge_cells(f'E{r_hok}:H{r_hok}')
+        ws.merge_cells(f'I{r_hok}:M{r_hok}')
+        for ref, text in [
+            (f'A{r_hok}', 'Dibuat Oleh :'),
+            (f'E{r_hok}', 'Diperiksa Oleh :'),
+            (f'I{r_hok}', 'Diketahui Oleh :'),
+        ]:
+            c = ws[ref]
+            c.value = text
+            c.font = FONT_NORMAL
+            c.alignment = ALIGN_L
+        r_hok += 4  # blank signature space
+
+        # Signer names
+        ws.merge_cells(f'A{r_hok}:D{r_hok}')
+        ws.merge_cells(f'E{r_hok}:H{r_hok}')
+        ws.merge_cells(f'I{r_hok}:M{r_hok}')
+        for ref, text in [
+            (f'A{r_hok}', SIGNER_NAMES[0]),
+            (f'E{r_hok}', SIGNER_NAMES[1]),
+            (f'I{r_hok}', SIGNER_NAMES[2]),
+        ]:
+            c = ws[ref]
+            c.value = text
+            c.font = FONT_NORMAL
+            c.alignment = ALIGN_L
 
 
 # ---------------------------------------------------------------------------
@@ -347,7 +419,7 @@ def buat_sheet_individual_static(
     ws = wb.create_sheet(title='Laporan Individual')
     ws.sheet_view.showGridLines = False
 
-    pins = sorted(laporan_individual.keys())
+    pins = sorted(laporan_individual.keys(), key=lambda p: laporan_individual[p]['nama'].upper())
     li_refs: dict[int, dict] = {}
 
     R = 1
@@ -392,6 +464,8 @@ def buat_sheet_individual_static(
             c.alignment = ALIGN_C
             ws[f'{cl}{r_hdr+1}'].border = BORDER
 
+        is_keamanan = data.get('employee_type') in ('keamanan', 'keamanan_malam')
+
         # ---- Daily data rows ----
         for idx, d in enumerate(detail):
             r = ds + idx
@@ -405,14 +479,22 @@ def buat_sheet_individual_static(
                 font, fill = FONT_NORMAL, None
 
             menit = d['menit_terlambat']
+            has_both_scans = bool(d['jam_masuk'] and d['jam_keluar'])
+            is_late = not is_keamanan and menit > 0 and has_both_scans
+
+            catatan = d['catatan_otomatis']
+            if is_late:
+                suffix = f'Terlambat {menit} menit'
+                catatan = f'{catatan} | {suffix}' if catatan else suffix
+
             row_vals = [
                 ('A', d['hari'],                            ALIGN_C0),
                 ('B', d['tanggal'],                         ALIGN_C0),
                 ('C', d['jam_kerja'],                       ALIGN_C0),
                 ('D', format_waktu(d['jam_masuk']),         ALIGN_C0),
                 ('E', format_waktu(d['jam_keluar']),        ALIGN_C0),
-                ('F', menit if menit > 0 else None,         ALIGN_C0),
-                ('G', d['catatan_otomatis'],                ALIGN_L),
+                ('F', None if is_keamanan else (menit if menit > 0 else None), ALIGN_C0),
+                ('G', catatan,                              ALIGN_L),
             ]
             for cl, val, align in row_vals:
                 c = ws[f'{cl}{r}']
@@ -423,6 +505,8 @@ def buat_sheet_individual_static(
                 if fill:
                     c.fill = fill
             ws[f'B{r}'].number_format = 'DD-MM-YYYY'
+            if is_late and not is_wknd and not is_libur:
+                ws[f'D{r}'].font = FONT_MERAH
 
         # ---- TOTAL row ----
         ws.merge_cells(f'A{r_total}:E{r_total}')
@@ -478,6 +562,12 @@ def buat_sheet_individual_static(
         # ---- Notes lines ----
         r_notes = r_total + 10
         li_refs[pin] = {}
+        count_map = {
+            'cuti':     data.get('count_cuti', 0),
+            'sakit':    data.get('count_sakit', 0),
+            'izin':     data.get('count_izin', 0),
+            'dinas':    data.get('count_dinas', 0),
+        }
         for i, (key, label, unit) in enumerate(NOTES_LINES):
             r_note = r_notes + i
             ws.merge_cells(f'A{r_note}:B{r_note}')
@@ -493,6 +583,8 @@ def buat_sheet_individual_static(
             c = ws[f'D{r_note}']
             if key == 'terlambat':
                 c.value = f'=SUM(F{ds}:F{de})'
+            elif key in count_map and count_map[key] > 0:
+                c.value = count_map[key]
             c.font = FONT_NORMAL
             c.number_format = '0'
             c.alignment = ALIGN_C0
@@ -510,6 +602,37 @@ def buat_sheet_individual_static(
         ws.column_dimensions[kol].width = w
 
     return li_refs
+
+
+# ---------------------------------------------------------------------------
+# Sheet 5 — Log Penyesuaian (audit trail)
+# ---------------------------------------------------------------------------
+
+def buat_sheet_log_penyesuaian(wb: Workbook, adjustments) -> None:
+    ws = wb.create_sheet(title='Log Penyesuaian')
+    headers = ['No', 'Tanggal', 'Karyawan', 'Tipe', 'Catatan', 'Author', 'Waktu']
+    for ci, h in enumerate(headers, 1):
+        c = ws.cell(row=1, column=ci, value=h)
+        c.font = FONT_HEADER
+        c.fill = FILL_HEADER
+        c.border = BORDER
+        c.alignment = ALIGN_C0
+
+    for idx, a in enumerate(adjustments, 1):
+        nama = a['nama_lengkap'] if 'nama_lengkap' in a.keys() and a['nama_lengkap'] else 'Semua'
+        row_vals = [
+            idx, a['tanggal_from'], nama,
+            a['tipe'], a['catatan'] or '', a['author'],
+            a['created_at'][:16] if a['created_at'] else '',
+        ]
+        for ci, val in enumerate(row_vals, 1):
+            c = ws.cell(row=idx + 1, column=ci, value=val)
+            c.font = FONT_NORMAL
+            c.border = BORDER
+            c.alignment = ALIGN_L if ci in (3, 4, 5) else ALIGN_C0
+
+    for ci in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(ci)].width = [5, 14, 28, 20, 32, 16, 18][ci - 1]
 
 
 # ---------------------------------------------------------------------------

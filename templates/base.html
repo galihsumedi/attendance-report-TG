@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Laporan Kehadiran v3.0{% endblock %} — Tectona Group</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <script src="https://unpkg.com/htmx.org@1.9.12" crossorigin="anonymous"></script>
+</head>
+<body>
+  <nav>
+    <span class="brand">&#128203; Kehadiran v3.0</span>
+    <a href="{{ url_for('upload.upload_page') }}" {% if request.endpoint and request.endpoint.startswith('upload') %}class="active"{% endif %}>Upload</a>
+    <a href="{{ url_for('periods.list_page') }}" {% if request.endpoint and request.endpoint.startswith('periods') %}class="active"{% endif %}>Periode</a>
+    <a href="{{ url_for('employees.list_page') }}" {% if request.endpoint and request.endpoint.startswith('employees') %}class="active"{% endif %}>Karyawan</a>
+    <a href="{{ url_for('settings.settings_page') }}" {% if request.endpoint and request.endpoint.startswith('settings') %}class="active"{% endif %}>Pengaturan</a>
+    <span class="spacer"></span>
+    <a href="{{ url_for('auth.logout') }}">Keluar</a>
+  </nav>
+
+  <div class="page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flash-list">
+          {% for category, message in messages %}
+            <li class="flash-item {{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

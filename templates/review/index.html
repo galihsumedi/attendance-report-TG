@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Review — {{ period.bulan_tahun }}{% endblock %}
+{% block content %}
+
+<div class="flex-between" style="margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+  <div>
+    <h1>{{ period.bulan_tahun }}</h1>
+    <span class="badge badge-{{ period.status }}">{{ 'Draft' if period.status == 'draft' else 'Finalisasi' }}</span>
+  </div>
+  <div class="flex">
+    <a href="{{ url_for('export.download_excel', period_id=period.id) }}" class="btn btn-secondary">&#128190; Export Excel</a>
+    {% if period.status == 'draft' %}
+    <form method="POST" action="{{ url_for('export.finalize', period_id=period.id) }}"
+          onsubmit="return confirm('Finalisasi periode ini? Status tidak bisa dikembalikan ke draft.')">
+      <button type="submit" class="btn btn-primary">&#10003; Finalisasi</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Bulk adjustment bar -->
+<div class="bulk-bar">
+  <strong style="display:block;margin-bottom:8px;font-size:0.85rem;">Penyesuaian Massal</strong>
+  <form method="POST" action="{{ url_for('review.bulk_adjust', period_id=period.id) }}">
+    <div class="form-group">
+      <label>Tipe</label>
+      <select name="tipe">
+        {% for key, label in massal_choices %}
+        <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Tanggal</label>
+      <input type="date" name="tanggal" required style="width:140px;">
+    </div>
+    <div class="form-group">
+      <label>Catatan</label>
+      <input type="text" name="catatan" placeholder="Opsional" style="width:200px;">
+    </div>
+    <div class="form-group">
+      <label>Cakupan</label>
+      <select name="scope">
+        <option value="all">Semua karyawan</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">Terapkan</button>
+  </form>
+</div>
+
+<!-- Grid -->
+<div id="review-grid">
+  {% include 'review/_grid.html' %}
+</div>
+
+<p class="text-muted mt-4" style="font-size:0.75rem;">
+  Klik sel untuk mengedit. Warna: <span style="background:#fdecea;padding:1px 5px;border-radius:3px;">merah &gt;15 menit</span>
+  <span style="background:#fff8e1;padding:1px 5px;border-radius:3px;">kuning 1-15 menit</span>
+  <span style="background:#f0f4fc;padding:1px 5px;border-radius:3px;">biru akhir pekan</span>
+  <span style="background:#fff3e0;padding:1px 5px;border-radius:3px;">oranye hari libur</span>
+</p>
+{% endblock %}

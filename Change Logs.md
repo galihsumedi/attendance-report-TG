@@ -3,7 +3,190 @@
 > **Reminder for every update:** Before closing any version, always update:
 > 1. `Change Logs.md` — add new version entry at the top, in descending order (latest first)
 > 2. `README.md` — bump version number in the title header
-> 3. `templates/index.html` — bump version in both the `<title>` tag and the subtitle paragraph
+> 3. `templates/base.html` — bump version in the nav brand and page title
+
+---
+
+## v3.0 — Stateful Review App (in progress)
+
+> **Status: Beta — actively being worked on. See planned items at the bottom of this entry.**
+
+### Implemented (1 June 2026)
+
+Complete rewrite from a stateless upload-download tool into a database-backed web app.
+
+#### Adjustment logic
+- **Status** (read-only in UI) — set at import from fingerprint data: `Tidak Ada Scan`, `Hanya Scan Masuk`, `3 Scan Terdeteksi`. Never editable by HR.
+- **Penyesuaian Keterlambatan** — independent control, affects `menit_terlambat` only:
+  - Options: Cuaca · Dinas Lapangan atau Kerja · Keterlambatan Disetujui · Koreksi Scan
+  - All options (including Koreksi Scan) zero lateness for that day
+- **Penyesuaian Absen** — independent control, affects HK Tidak Ada Scan only:
+  - Options: Cuti · Izin · Sakit · Koreksi Scan
+  - Any option exempts the day from the missing-scan count
+- **Catatan** — single free-text field per cell, shared across both adjustment types
+- **Penyesuaian Massal** — two options only: `Cuaca atau Banjir` · `Cuti Bersama`; both affect lateness AND HK Tidak Ada Scan for all employees on the selected date; written as one audit row (not one per employee)
+
+#### Export — Laporan Individual
+- **Cuti/Sakit/Izin/Dinas counts** auto-populated from DB adjustments (no longer blank):
+  - Cuti: `adj_absen = cuti` or `cuti_bersama`
+  - Sakit: `adj_absen = sakit`
+  - Izin: `adj_absen = izin`
+  - Dinas Lapangan: `adj_keterlambatan = dinas_lapangan` only
+- **Catatan column** now shows: `[auto label] | [HR free-text note]` (e.g. `Izin | ijin keluarga`)
+- Employees listed **alphabetically by name** in both Laporan Individual and Rekapitulasi
+
+#### Employee list persistence across Render restarts
+- Any change to the employee list (add, rename, delete employee; add or remove alias; resolve unknown aliases on upload) automatically rewrites `nama_karyawan.py` and commits it to the `v3.0` branch on GitHub
+- On service restart, the empty DB re-seeds from the updated `nama_karyawan.py`, so the employee list is fully restored
+- Requires `GITHUB_TOKEN`, `GITHUB_REPO`, and `GITHUB_BRANCH=v3.0` env vars; silently skips if not configured (local dev unaffected)
+
+#### Petugas Keamanan — separate reporting format (2 June 2026)
+
+- Added `employee_type` column to `employees` table (`standard` | `keamanan`); existing employees default to `standard`
+- Four employees tagged as `keamanan`: Marto, Purnama Sancang, Bayu Prastyo, Yulian Nur Rahman
+- Employee create/edit form now has a **Tipe Karyawan** dropdown (Karyawan Standar / Petugas Keamanan)
+- **Laporan Individual** differences for `keamanan` employees:
+  - Jam Kerja column shows `8 Jam` instead of `08:00-17:00`
+  - Menit Terlambat column always blank (no lateness tracking)
+  - Red Jam Masuk font and "Terlambat x menit" catatan are suppressed
+  - Weekends and holidays still show scan data (security staff work all days)
+- **HOK (Hari Orang Kerja)** = count of days in the month where the employee has at least one scan
+- **Rekapitulasi** — new section appended below the main alphabetical table:
+  - Lists each Petugas Keamanan (alphabetical) with their HOK count
+  - Followed by a signature block (Dibuat Oleh / Diperiksa Oleh / Diketahui Oleh) with date and signer names
+
+#### Penyesuaian Absen — fixes and new option (2 June 2026)
+- Added **Alasan Lainnya** to Penyesuaian Absen dropdown (exempts from HK Tdk Scan; shown in Catatan column on export)
+- Fixed: Dinas Lapangan atau Kerja set via Penyesuaian Absen now correctly increments the Dinas count in Laporan Individual footer (previously only counted when set via Penyesuaian Keterlambatan)
+
+#### Export — Rekapitulasi column header corrections and number formatting (2 June 2026)
+- Renamed column headers: Total → Total Denda, Sangsi → Sanksi, Jumlah → Jumlah Sanksi
+- Denda/Menit, Total Denda, and Jumlah Sanksi columns now formatted to zero decimal places (`#,##0`); underlying values unchanged
+
+#### Denda/Menit per karyawan (2 June 2026)
+- Added `denda_per_menit` column to `employees` table
+- All 36 existing employees seeded with correct values from the May 2026 reference file
+- Employee edit form now shows a Denda/Menit input field
+- New employee preflight form (unknown alias resolution on upload) now collects Tipe Karyawan and Denda/Menit for new employees at registration time
+- `github_service.py` writes `DENDA_PER_MENIT` dict to `nama_karyawan.py` on every employee mutation, persisting values across Render restarts
+- `migrasi_nama_karyawan` reads `DENDA_PER_MENIT` on fresh DB re-seed
+- Rekapitulasi export: column J (Denda/Menit) now auto-populated per employee; existing K and M formula columns calculate automatically
+
+#### Fix: employee_type persisted across Render restarts (2 June 2026)
+- `nama_karyawan.py` now includes an `EMPLOYEE_TYPES` dict for non-standard employees (e.g. `'keamanan'`)
+- `github_service.py` writes `EMPLOYEE_TYPES` to `nama_karyawan.py` on every employee mutation, alongside the existing `NAMA_LENGKAP` dict
+- `database.py` re-seed migration now reads `EMPLOYEE_TYPES` and applies the correct type when creating employees from scratch
+- Without this fix, Petugas Keamanan employees would revert to `'standard'` after every Render restart
+
+#### Export — Rekapitulasi HOK signature date in Indonesian (2 June 2026)
+- The "Samarinda, [date]" line in the HOK signature block now uses Indonesian month names (e.g. `02 Juni 2026` instead of `02 June 2026`)
+- Date still reflects the day of export, not the reporting period
+
+#### Penyesuaian Massal — Hari Libur (2 June 2026)
+- Added **Hari Libur** as a third option in Penyesuaian Massal, alongside Cuaca atau Banjir and Cuti Bersama
+- Same behaviour as the other massal types: zeros lateness and exempts all employees on that date from HK Tidak Ada Scan
+- Applies `adj_keterlambatan = hari_libur` and `adj_absen = hari_libur` to each affected row; written as one audit record
+
+#### Penyesuaian Absen — Dinas Lapangan atau Kerja (2 June 2026)
+- Added **Dinas Lapangan atau Kerja** to the Penyesuaian Absen dropdown in the cell edit form
+- Previously only available in Penyesuaian Keterlambatan; now also exempts the day from HK Tidak Ada Scan
+
+#### Export — Laporan Individual lateness highlights (2 June 2026)
+- When an employee has both a scan-in and scan-out and is late that day, the **Jam Masuk cell is now red**
+- The **Catatan column** for that day now includes `Terlambat x menit` (appended with ` | ` separator if other catatan text is already present)
+- Only applies to normal workdays with both scans present; weekend and holiday rows are unaffected (those already render the full row in red)
+
+#### Bug fixes
+- Log Penyesuaian no longer shows phantom entries for employees who had no personal adjustments (was caused by bulk actions writing one audit row per employee)
+- Dropdown menus in the cell edit form (Penyesuaian Keterlambatan, Penyesuaian Absen) now open correctly — clicks inside the form were bubbling up to the parent `<td>`'s HTMX handler, causing the form to reload before any dropdown could open
+
+---
+
+## v3.0 — Stateful Review App (original spec, 1 June 2026)
+
+Complete rewrite from a stateless upload-download tool into a database-backed web app. Nothing is left blank for hand-editing in Excel.
+
+### What changed
+
+| Area | v2.3 | v3.0 |
+|---|---|---|
+| State | Ephemeral — lost on each request | SQLite on persistent disk |
+| Employee names | `nama_karyawan.py` committed to GitHub via write token | `employees` + `employee_aliases` tables; migrated on first run |
+| Output | Excel generated immediately, downloaded once | Generated on demand from DB; re-downloadable anytime |
+| HR corrections | Hand-edits inside protected Excel | Inline cell editing in review grid, logged as adjustments |
+| Audit trail | None | `adjustments` table → "Log Penyesuaian" 5th sheet in export |
+
+### Three-screen workflow
+
+**Screen 1 — Upload & match**
+- Pre-flight card: detected month, employee count, record count
+- Unknown fingerprint aliases resolved inline via autocomplete (alias to existing employee, or create new)
+
+**Screen 2 — Review grid**
+- All employees × all days of the month in one scrollable table
+- Three frozen columns: Karyawan · Menit Terlambat · HK Tdk Scan
+- Cell badges: Tepat (green) / 1–15 mnt (yellow) / >15 mnt (red) / Tdk ada scan (orange) / Libur (grey)
+- Click any cell → inline edit form (HTMX, no page reload)
+- **Two independent controls per cell:**
+  - *Status* — affects "HK Tdk Scan" count only. Setting Cuti / Sakit / Izin / Dinas Lapangan / Hadir (Cuaca) exempts the day from the missing-scan count. Does not touch menit terlambat.
+  - *Tipe Penyesuaian* — affects menit terlambat only. Any type except `scan_manual` zeros lateness; `scan_manual` recalculates from the corrected scan time. Does not touch the noscan count.
+  - Saved tipe is pre-selected the next time the cell is opened
+  - One adjustment record per day per employee (upsert — no duplicates)
+- Bulk adjustment bar: apply cuaca or dinas to all employees on a date in one action
+- "HK Tdk Scan" column: count of workdays (non-weekend, non-holiday) with no scan and no exempt status
+
+**Screen 3 — Finalize & export**
+- Finalize locks the period
+- Export available anytime (draft or finalized) without re-uploading
+- All 4 existing sheets fully populated (Cuti / Sakit / Izin / Denda columns no longer blank)
+- New 5th sheet: **Log Penyesuaian** — full HR correction audit trail
+
+### Business logic (unchanged from v2.3)
+- Lateness = minutes only, seconds ignored; strict 08:00 cutoff
+- Day 1 of month always exempt from lateness
+- Reference month = most frequent month in the file
+- National holidays from Nager.Date API, cached per year
+
+### Configurable settings (`/pengaturan`)
+Jam masuk/keluar batas · Grace period · Day-1 exemption toggle · Denda per menit · Sangsi multiplier. Changing any setting immediately recalculates lateness for all draft periods.
+
+### Auth
+Single-user session. Password via `HR_PASSWORD_HASH` env var (bcrypt). Falls back to `admin` locally. Set `SECRET_KEY` env var in production.
+
+### New dependencies
+`bcrypt==4.1.3` · `python-dotenv==1.0.1`
+
+### Migration from v2.3
+On first startup, all 41 entries in `nama_karyawan.py` are imported into `employees` + `employee_aliases`. GitHub token hack retired.
+
+---
+
+### Planned — Security Employee Schedules
+
+> Not yet implemented. Pending answers on shift patterns.
+
+Three security employees work non-standard schedules and do not need lateness tracking. HR only needs to know how many days they attended out of their scheduled working days each month.
+
+**Proposed approach — two new flags on `employees`:**
+
+| Flag | Type | Default | Purpose |
+|---|---|---|---|
+| `lacak_keterlambatan` | boolean | TRUE | If FALSE: `menit_terlambat` is always 0, lateness column blank in Laporan Individual, Penyesuaian Keterlambatan hidden in cell edit form |
+| `hari_kerja` | text (e.g. `"0,1,2,3,4,5,6"`) | `"0,1,2,3,4"` (Mon–Fri) | Determines which days of the week count as workdays for HK Tidak Ada Scan. Security working 7 days would use all 7. |
+
+**What changes:**
+- `employees` table: two new columns
+- `lateness_service.py`: skip calculation if `lacak_keterlambatan = FALSE`
+- Noscan count: use employee's `hari_kerja` instead of `is_weekend` flag
+- Cell edit form: hide Penyesuaian Keterlambatan for employees with `lacak_keterlambatan = FALSE`
+- Employee management UI: expose both flags when creating/editing an employee
+
+**What does not change:**
+- Regular employees: zero impact
+- Laporan Individual layout: no new columns
+- Export logic: the Menit Terlambat column stays; it just shows 0 / blank for security staff
+
+**Open question before implementation:** Do the three security employees work all 7 days, or on a pattern such as 6 days on / 1 day off? A fixed day-of-week list (`hari_kerja`) works cleanly for 7-day schedules but not for rotating rest days.
 
 ---
 
