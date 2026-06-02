@@ -69,15 +69,18 @@ def buat_excel_dari_db(
     laporan_individual: dict[str, dict] = {}
     rekapitulasi_map: dict[str, dict] = {}
 
-    # Build employee_type lookup from DB
+    # Build employee attribute lookups from DB
     emp_type_map: dict[int, str] = {}
-    for row in conn.execute('SELECT id, employee_type FROM employees').fetchall():
+    emp_denda_map: dict[int, float] = {}
+    for row in conn.execute('SELECT id, employee_type, denda_per_menit FROM employees').fetchall():
         emp_type_map[row['id']] = row['employee_type']
+        emp_denda_map[row['id']] = row['denda_per_menit'] or 0
 
     for emp in employees:
         pin = emp['pin']
         nama = emp['nama']
         emp_type = emp_type_map.get(emp['employee_id'], 'standard')
+        denda = emp_denda_map.get(emp['employee_id'], 0)
         laporan_individual[pin] = {
             'pin': pin,
             'nip': emp['nip'],
@@ -98,6 +101,7 @@ def buat_excel_dari_db(
             'departemen': emp['departemen'],
             'kantor': emp['kantor'],
             'employee_type': emp_type,
+            'denda_per_menit': denda,
             'jumlah_hari_terlambat': 0,
             'total_menit_terlambat': 0,
             'hok': 0,

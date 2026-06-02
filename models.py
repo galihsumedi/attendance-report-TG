@@ -36,19 +36,30 @@ def get_aliases_for_employee(conn: sqlite3.Connection, employee_id: int) -> list
     ).fetchall()
 
 
-def create_employee(conn: sqlite3.Connection, nama_lengkap: str, employee_type: str = 'standard') -> int:
+def create_employee(
+    conn: sqlite3.Connection,
+    nama_lengkap: str,
+    employee_type: str = 'standard',
+    denda_per_menit: float = 0,
+) -> int:
     cur = conn.execute(
-        'INSERT INTO employees (nama_lengkap, employee_type) VALUES (?, ?)',
-        (nama_lengkap, employee_type),
+        'INSERT INTO employees (nama_lengkap, employee_type, denda_per_menit) VALUES (?, ?, ?)',
+        (nama_lengkap, employee_type, denda_per_menit),
     )
     conn.commit()
     return cur.lastrowid
 
 
-def update_employee(conn: sqlite3.Connection, employee_id: int, nama_lengkap: str, employee_type: str = 'standard') -> None:
+def update_employee(
+    conn: sqlite3.Connection,
+    employee_id: int,
+    nama_lengkap: str,
+    employee_type: str = 'standard',
+    denda_per_menit: float = 0,
+) -> None:
     conn.execute(
-        "UPDATE employees SET nama_lengkap = ?, employee_type = ?, updated_at = datetime('now') WHERE id = ?",
-        (nama_lengkap, employee_type, employee_id),
+        "UPDATE employees SET nama_lengkap = ?, employee_type = ?, denda_per_menit = ?, updated_at = datetime('now') WHERE id = ?",
+        (nama_lengkap, employee_type, denda_per_menit, employee_id),
     )
     conn.commit()
 

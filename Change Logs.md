@@ -55,6 +55,15 @@ Complete rewrite from a stateless upload-download tool into a database-backed we
   - Lists each Petugas Keamanan (alphabetical) with their HOK count
   - Followed by a signature block (Dibuat Oleh / Diperiksa Oleh / Diketahui Oleh) with date and signer names
 
+#### Denda/Menit per karyawan (2 June 2026)
+- Added `denda_per_menit` column to `employees` table
+- All 36 existing employees seeded with correct values from the May 2026 reference file
+- Employee edit form now shows a Denda/Menit input field
+- New employee preflight form (unknown alias resolution on upload) now collects Tipe Karyawan and Denda/Menit for new employees at registration time
+- `github_service.py` writes `DENDA_PER_MENIT` dict to `nama_karyawan.py` on every employee mutation, persisting values across Render restarts
+- `migrasi_nama_karyawan` reads `DENDA_PER_MENIT` on fresh DB re-seed
+- Rekapitulasi export: column J (Denda/Menit) now auto-populated per employee; existing K and M formula columns calculate automatically
+
 #### Fix: employee_type persisted across Render restarts (2 June 2026)
 - `nama_karyawan.py` now includes an `EMPLOYEE_TYPES` dict for non-standard employees (e.g. `'keamanan'`)
 - `github_service.py` writes `EMPLOYEE_TYPES` to `nama_karyawan.py` on every employee mutation, alongside the existing `NAMA_LENGKAP` dict

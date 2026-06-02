@@ -17,6 +17,11 @@
           <option value="keamanan" {% if employee and employee.employee_type == 'keamanan' %}selected{% endif %}>Petugas Keamanan</option>
         </select>
       </div>
+      <div class="form-group">
+        <label>Denda / Menit <span style="color:#888;font-weight:normal;font-size:0.75rem;">(Rp per menit terlambat)</span></label>
+        <input type="number" name="denda_per_menit" step="0.0001" min="0"
+               value="{{ employee.denda_per_menit if employee else '' }}" placeholder="0">
+      </div>
       {% if not employee %}
       <div class="form-group">
         <label>Alias Fingerprint (opsional)</label>

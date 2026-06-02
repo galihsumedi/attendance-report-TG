@@ -131,6 +131,7 @@ def migrasi_nama_karyawan(conn: sqlite3.Connection) -> None:
         import nama_karyawan
         NAMA_LENGKAP = nama_karyawan.NAMA_LENGKAP
         EMPLOYEE_TYPES = getattr(nama_karyawan, 'EMPLOYEE_TYPES', {})
+        DENDA_PER_MENIT = getattr(nama_karyawan, 'DENDA_PER_MENIT', {})
     except ImportError:
         return
     for alias, nama_lengkap in NAMA_LENGKAP.items():
@@ -141,9 +142,10 @@ def migrasi_nama_karyawan(conn: sqlite3.Connection) -> None:
             emp_id = row['id']
         else:
             emp_type = EMPLOYEE_TYPES.get(nama_lengkap, 'standard')
+            denda = DENDA_PER_MENIT.get(nama_lengkap, 0)
             cur = conn.execute(
-                'INSERT INTO employees (nama_lengkap, employee_type) VALUES (?, ?)',
-                (nama_lengkap, emp_type),
+                'INSERT INTO employees (nama_lengkap, employee_type, denda_per_menit) VALUES (?, ?, ?)',
+                (nama_lengkap, emp_type, denda),
             )
             emp_id = cur.lastrowid
         conn.execute(
@@ -165,6 +167,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
     existing_emp = {row[1] for row in conn.execute('PRAGMA table_info(employees)')}
     if 'employee_type' not in existing_emp:
         conn.execute("ALTER TABLE employees ADD COLUMN employee_type TEXT NOT NULL DEFAULT 'standard'")
+    if 'denda_per_menit' not in existing_emp:
+        conn.execute('ALTER TABLE employees ADD COLUMN denda_per_menit REAL NOT NULL DEFAULT 0')
 
     conn.commit()
 

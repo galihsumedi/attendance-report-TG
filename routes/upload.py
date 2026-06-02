@@ -70,6 +70,8 @@ def match_names():
     actions = request.form.getlist('action[]')    # 'existing' | 'new'
     emp_ids = request.form.getlist('employee_id[]')
     new_names = request.form.getlist('new_name[]')
+    new_employee_types = request.form.getlist('new_employee_type[]')
+    new_dendas = request.form.getlist('new_denda[]')
 
     db = get_db()
     resolve_map: dict[str, int] = {}
@@ -90,7 +92,12 @@ def match_names():
                 flash(f'Nama lengkap untuk alias "{alias}" tidak boleh kosong.', 'error')
                 os.remove(path)
                 return redirect(url_for('upload.upload_page'))
-            emp_id = create_employee(db, full_name)
+            emp_type = new_employee_types[i].strip() if i < len(new_employee_types) else 'standard'
+            try:
+                denda = float(new_dendas[i]) if i < len(new_dendas) and new_dendas[i] else 0
+            except ValueError:
+                denda = 0
+            emp_id = create_employee(db, full_name, emp_type, denda)
             try:
                 add_alias(db, emp_id, alias)
             except Exception:

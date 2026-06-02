@@ -166,9 +166,11 @@ def buat_sheet_rekapitulasi(
             c.border = BORDER
             c.alignment = ALIGN_C0
 
-        # J: Denda/Menit — user fills manually
-        c = ws.cell(row=r, column=10, value=None)
+        # J: Denda/Menit — from employee record
+        denda = k.get('denda_per_menit') or None
+        c = ws.cell(row=r, column=10, value=denda)
         c.font = FONT_NORMAL
+        c.number_format = '#,##0.0000'
         c.border = BORDER
         c.alignment = ALIGN_C0
 

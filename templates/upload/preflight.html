@@ -19,24 +19,41 @@
   </div>
 
   {% for alias in unknown %}
-  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; align-items:end; margin-bottom:10px;">
-    <div>
-      <label style="font-size:0.75rem;color:#888;">Nama Fingerprint</label>
-      <div class="fp-name">{{ alias }}</div>
-      <input type="hidden" name="alias[]" value="{{ alias }}">
-    </div>
-    <div>
-      <label for="action_{{ loop.index0 }}" style="font-size:0.75rem;color:#888;">Tindakan</label>
-      <select name="action[]" id="action_{{ loop.index0 }}"
-              onchange="toggleFields(this, {{ loop.index0 }})">
-        <option value="new">Tambah sebagai karyawan baru</option>
-        <option value="existing">Alias ke karyawan yang ada</option>
-      </select>
+  <div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:12px;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; align-items:end; margin-bottom:8px;">
+      <div>
+        <label style="font-size:0.75rem;color:#888;">Nama Fingerprint</label>
+        <div class="fp-name">{{ alias }}</div>
+        <input type="hidden" name="alias[]" value="{{ alias }}">
+      </div>
+      <div>
+        <label for="action_{{ loop.index0 }}" style="font-size:0.75rem;color:#888;">Tindakan</label>
+        <select name="action[]" id="action_{{ loop.index0 }}"
+                onchange="toggleFields(this, {{ loop.index0 }})">
+          <option value="new">Tambah sebagai karyawan baru</option>
+          <option value="existing">Alias ke karyawan yang ada</option>
+        </select>
+      </div>
     </div>
     <div id="field_{{ loop.index0 }}">
-      <label style="font-size:0.75rem;color:#888;">Nama Lengkap</label>
-      <input type="text" name="new_name[]" placeholder="Nama lengkap..." required>
-      <input type="hidden" name="employee_id[]" value="">
+      <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:8px; align-items:end;">
+        <div>
+          <label style="font-size:0.75rem;color:#888;">Nama Lengkap</label>
+          <input type="text" name="new_name[]" placeholder="Nama lengkap..." required>
+          <input type="hidden" name="employee_id[]" value="">
+        </div>
+        <div>
+          <label style="font-size:0.75rem;color:#888;">Tipe Karyawan</label>
+          <select name="new_employee_type[]">
+            <option value="standard">Karyawan Standar</option>
+            <option value="keamanan">Petugas Keamanan</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.75rem;color:#888;">Denda/Menit (Rp)</label>
+          <input type="number" name="new_denda[]" step="0.0001" min="0" placeholder="0" value="">
+        </div>
+      </div>
     </div>
   </div>
   {% endfor %}
@@ -62,13 +79,30 @@ function toggleFields(sel, idx) {
       <input type="text" id="search_${idx}" placeholder="Ketik nama..." oninput="searchEmp(this, ${idx})" autocomplete="off">
       <input type="hidden" name="new_name[]" value="">
       <input type="hidden" name="employee_id[]" id="empid_${idx}" value="">
+      <input type="hidden" name="new_employee_type[]" value="">
+      <input type="hidden" name="new_denda[]" value="">
       <div id="suggestions_${idx}" style="background:white;border:1px solid #ddd;border-radius:6px;position:relative;z-index:50;max-height:150px;overflow-y:auto;"></div>
     `;
   } else {
     div.innerHTML = `
-      <label style="font-size:0.75rem;color:#888;">Nama Lengkap</label>
-      <input type="text" name="new_name[]" placeholder="Nama lengkap..." required>
-      <input type="hidden" name="employee_id[]" value="">
+      <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:8px; align-items:end;">
+        <div>
+          <label style="font-size:0.75rem;color:#888;">Nama Lengkap</label>
+          <input type="text" name="new_name[]" placeholder="Nama lengkap..." required>
+          <input type="hidden" name="employee_id[]" value="">
+        </div>
+        <div>
+          <label style="font-size:0.75rem;color:#888;">Tipe Karyawan</label>
+          <select name="new_employee_type[]">
+            <option value="standard">Karyawan Standar</option>
+            <option value="keamanan">Petugas Keamanan</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.75rem;color:#888;">Denda/Menit (Rp)</label>
+          <input type="number" name="new_denda[]" step="0.0001" min="0" placeholder="0" value="">
+        </div>
+      </div>
     `;
   }
 }

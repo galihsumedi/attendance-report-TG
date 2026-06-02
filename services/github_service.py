@@ -38,6 +38,16 @@ def _build_file_content(conn: sqlite3.Connection) -> str:
             lines.append(f'    {repr(r[0])}: {repr(r[1])},\n')
         lines.append('}\n')
 
+    # Persist denda_per_menit so it survives a DB re-seed
+    denda_rows = conn.execute(
+        'SELECT nama_lengkap, denda_per_menit FROM employees WHERE denda_per_menit > 0 ORDER BY nama_lengkap'
+    ).fetchall()
+    if denda_rows:
+        lines.append('\nDENDA_PER_MENIT = {\n')
+        for r in denda_rows:
+            lines.append(f'    {repr(r[0])}: {r[1]},\n')
+        lines.append('}\n')
+
     return ''.join(lines)
 
 
