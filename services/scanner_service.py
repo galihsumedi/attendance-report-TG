@@ -20,6 +20,24 @@ from models import (
     upsert_attendance_day,
 )
 
+NIGHT_SHIFT_TYPE = 'keamanan_malam'
+
+
+def _scan_datetimes_for_pin(data_mentah: pd.DataFrame, pin) -> list[datetime]:
+    """Collect every scan (Scan 1/2/3, all dates incl. boundary months) for a
+    PIN as chronological datetimes, for night-shift pairing."""
+    sub = data_mentah[data_mentah['PIN'] == pin]
+    out: list[datetime] = []
+    for _, r in sub.iterrows():
+        tgl = processor.parse_tanggal(r.get('Tanggal'))
+        if tgl is None:
+            continue
+        for col in ('Scan 1', 'Scan 2', 'Scan 3'):
+            t = processor.parse_waktu(r.get(col))
+            if t is not None:
+                out.append(datetime.combine(tgl.date(), t))
+    return out
+
 
 def _safe_str(v) -> str:
     """Convert a value to str, treating None and NaN as empty string."""
@@ -148,12 +166,32 @@ def parse_and_persist(
         else:
             emp_id = emp_row['id']
 
+        # Night-shift staff need shift pairing across midnight; the day-shift
+        # detail (scan1=masuk, scan2=keluar) is wrong for them.
+        emp_type_row = conn.execute(
+            'SELECT employee_type FROM employees WHERE id = ?', (emp_id,)
+        ).fetchone()
+        is_night = bool(emp_type_row) and emp_type_row['employee_type'] == NIGHT_SHIFT_TYPE
+        shift_map: dict = {}
+        if is_night:
+            scans = _scan_datetimes_for_pin(hasil['data_mentah'], pin)
+            shift_map = processor.pasangkan_shift_malam(scans, tahun, bulan)
+
         detail = laporan[pin]['detail']
         for d in detail:
             tgl_str = d['tanggal'].strftime('%Y-%m-%d')
-            scan1_str = d['jam_masuk'].strftime('%H:%M:%S') if d['jam_masuk'] else None
-            scan_out = d['jam_keluar']
-            scan_out_str = scan_out.strftime('%H:%M:%S') if scan_out else None
+            catatan = d['catatan_otomatis']
+            if is_night:
+                shift = shift_map.get(d['tanggal'].date())
+                masuk = shift['masuk'] if shift else None
+                keluar = shift['keluar'] if shift else None
+                scan1_str = masuk.strftime('%H:%M:%S') if masuk else None
+                scan_out_str = keluar.strftime('%H:%M:%S') if keluar else None
+                catatan = shift['flag'] if shift else ''
+            else:
+                scan1_str = d['jam_masuk'].strftime('%H:%M:%S') if d['jam_masuk'] else None
+                scan_out = d['jam_keluar']
+                scan_out_str = scan_out.strftime('%H:%M:%S') if scan_out else None
 
             row = {
                 'pin': _safe_str(pin),
@@ -163,8 +201,8 @@ def parse_and_persist(
                 'raw_scan2': scan_out_str,  # processor merges scan2/scan3 → jam_keluar
                 'raw_scan3': None,
                 'menit_terlambat': d['menit_terlambat'],
-                'status_hari': d['catatan_otomatis'],
-                'catatan_otomatis': d['catatan_otomatis'],
+                'status_hari': catatan,
+                'catatan_otomatis': catatan,
                 'is_weekend': 1 if d['is_weekend'] else 0,
                 'is_holiday': 1 if d.get('is_holiday', False) else 0,
                 'nama_libur': d.get('nama_libur'),

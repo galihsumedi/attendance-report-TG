@@ -117,7 +117,7 @@ def buat_excel_dari_db(
 
     for pin in sorted(laporan_individual.keys(), key=lambda p: laporan_individual[p]['nama'].upper()):
         emp_type = laporan_individual[pin]['employee_type']
-        is_keamanan = emp_type == 'keamanan'
+        is_keamanan = emp_type in ('keamanan', 'keamanan_malam')
         detail_list = []
         for tgl in all_dates:
             tgl_str = tgl.strftime('%Y-%m-%d')

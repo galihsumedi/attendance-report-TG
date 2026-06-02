@@ -15,6 +15,7 @@
         <select name="employee_type">
           <option value="standard" {% if not employee or employee.employee_type == 'standard' %}selected{% endif %}>Karyawan Standar</option>
           <option value="keamanan" {% if employee and employee.employee_type == 'keamanan' %}selected{% endif %}>Petugas Keamanan</option>
+          <option value="keamanan_malam" {% if employee and employee.employee_type == 'keamanan_malam' %}selected{% endif %}>Petugas Keamanan (Shift Malam)</option>
         </select>
       </div>
       <div class="form-group">

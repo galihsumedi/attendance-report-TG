@@ -118,6 +118,78 @@ def tentukan_catatan_otomatis(
     return ''
 
 
+# Night-shift pairing tolerances. A real shift runs ~8-9h; rest between
+# shifts runs ~14-16h. We classify the gap between two consecutive scans:
+# a gap within [MIN_SHIFT, MAX_SHIFT] is a worked shift (masuk -> keluar);
+# anything larger is rest, anything smaller is a double/ambiguous scan.
+SHIFT_MALAM_MIN = timedelta(hours=3)
+SHIFT_MALAM_MAX = timedelta(hours=13)
+
+FLAG_TANPA_KELUAR = 'Scan keluar tidak ada'
+FLAG_TANPA_MASUK = 'Scan masuk tidak ada'
+FLAG_AMBIGU = 'Scan ganda/ambigu'
+FLAG_MULTI = 'Beberapa shift dalam 1 hari'
+
+
+def pasangkan_shift_malam(
+    scans: list[datetime],
+    tahun: int,
+    bulan: int,
+) -> dict[date, dict[str, Any]]:
+    """
+    Pair clock-in/clock-out scans for a night-shift employee whose shifts
+    cross midnight. Works on the full chronological scan stream (including
+    boundary rows from the adjacent months) and attributes each shift to the
+    date it STARTS. Returns {start_date: {masuk, keluar, flag}} restricted to
+    the target month. masuk/keluar are time objects (or None). flag is a
+    human-readable note for incomplete/ambiguous days ('' when clean).
+    """
+    ev = sorted(set(scans))
+    n = len(ev)
+    entries: list[tuple[date, time | None, time | None, str]] = []
+
+    i = 0
+    while i < n:
+        cur = ev[i]
+        nxt = ev[i + 1] if i + 1 < n else None
+        gap_next = (nxt - cur) if nxt is not None else None
+
+        if gap_next is not None and SHIFT_MALAM_MIN <= gap_next <= SHIFT_MALAM_MAX:
+            # cur = masuk, nxt = keluar; attribute to the start date
+            entries.append((cur.date(), cur.time(), nxt.time(), ''))
+            i += 2
+            continue
+
+        # Lone scan that doesn't pair cleanly with the next one.
+        if gap_next is not None and gap_next < SHIFT_MALAM_MIN:
+            # Two scans too close together to be a real shift (double tap).
+            entries.append((cur.date(), cur.time(), None, FLAG_AMBIGU))
+        elif cur.time().hour < 12:
+            # Lone early-morning scan = exit of a shift whose entry is missing
+            # or belongs to the previous month.
+            entries.append((cur.date(), None, cur.time(), FLAG_TANPA_MASUK))
+        else:
+            # Lone afternoon/evening scan = entry with no recorded exit.
+            entries.append((cur.date(), cur.time(), None, FLAG_TANPA_KELUAR))
+        i += 1
+
+    result: dict[date, dict[str, Any]] = {}
+    for d, masuk, keluar, flag in entries:
+        if d.month != bulan or d.year != tahun:
+            continue
+        if d in result:
+            prev = result[d]
+            flags = [f for f in (prev['flag'], FLAG_MULTI) if f]
+            result[d] = {
+                'masuk': prev['masuk'] or masuk,
+                'keluar': prev['keluar'] or keluar,
+                'flag': ' | '.join(flags),
+            }
+        else:
+            result[d] = {'masuk': masuk, 'keluar': keluar, 'flag': flag}
+    return result
+
+
 def proses_data_scanlog(path_file: str) -> dict[str, Any]:
     df = pd.read_excel(path_file, header=1)
     df.columns = df.columns.str.strip()

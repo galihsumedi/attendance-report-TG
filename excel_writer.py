@@ -227,7 +227,7 @@ def buat_sheet_rekapitulasi(
 
     # ---- HOK section (Petugas Keamanan only) ----
     security = sorted(
-        [k for k in rekapitulasi if k.get('employee_type') == 'keamanan'],
+        [k for k in rekapitulasi if k.get('employee_type') in ('keamanan', 'keamanan_malam')],
         key=lambda x: x['nama'].upper(),
     )
     if security:
@@ -464,7 +464,7 @@ def buat_sheet_individual_static(
             c.alignment = ALIGN_C
             ws[f'{cl}{r_hdr+1}'].border = BORDER
 
-        is_keamanan = data.get('employee_type') == 'keamanan'
+        is_keamanan = data.get('employee_type') in ('keamanan', 'keamanan_malam')
 
         # ---- Daily data rows ----
         for idx, d in enumerate(detail):
