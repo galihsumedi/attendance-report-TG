@@ -24,10 +24,11 @@ def close_db(e=None):
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS employees (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    nama_lengkap TEXT NOT NULL UNIQUE,
-    created_at   TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama_lengkap  TEXT NOT NULL UNIQUE,
+    employee_type TEXT NOT NULL DEFAULT 'standard',
+    created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS employee_aliases (
@@ -149,13 +150,18 @@ def migrasi_nama_karyawan(conn: sqlite3.Connection) -> None:
 
 
 def _migrate(conn: sqlite3.Connection) -> None:
-    existing = {row[1] for row in conn.execute('PRAGMA table_info(attendance_days)')}
+    existing_days = {row[1] for row in conn.execute('PRAGMA table_info(attendance_days)')}
     for col, definition in [
         ('adj_keterlambatan', "TEXT NOT NULL DEFAULT ''"),
         ('adj_absen', "TEXT NOT NULL DEFAULT ''"),
     ]:
-        if col not in existing:
+        if col not in existing_days:
             conn.execute(f'ALTER TABLE attendance_days ADD COLUMN {col} {definition}')
+
+    existing_emp = {row[1] for row in conn.execute('PRAGMA table_info(employees)')}
+    if 'employee_type' not in existing_emp:
+        conn.execute("ALTER TABLE employees ADD COLUMN employee_type TEXT NOT NULL DEFAULT 'standard'")
+
     conn.commit()
 
 

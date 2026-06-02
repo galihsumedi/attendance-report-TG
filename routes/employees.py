@@ -37,12 +37,13 @@ def new_form():
     if request.method == 'POST':
         nama = request.form.get('nama_lengkap', '').strip()
         alias = request.form.get('alias', '').strip()
+        employee_type = request.form.get('employee_type', 'standard').strip()
         if not nama:
             flash('Nama lengkap tidak boleh kosong.', 'error')
             return render_template('employees/form.html', employee=None)
         try:
             db = get_db()
-            emp_id = create_employee(db, nama)
+            emp_id = create_employee(db, nama, employee_type)
             if alias:
                 try:
                     add_alias(db, emp_id, alias)
@@ -65,11 +66,12 @@ def edit_form(emp_id):
         abort(404)
     if request.method == 'POST':
         nama = request.form.get('nama_lengkap', '').strip()
+        employee_type = request.form.get('employee_type', 'standard').strip()
         if not nama:
             flash('Nama lengkap tidak boleh kosong.', 'error')
         else:
             try:
-                update_employee(db, emp_id, nama)
+                update_employee(db, emp_id, nama, employee_type)
                 sync_nama_karyawan(db)
                 flash('Data karyawan diperbarui.', 'success')
                 return redirect(url_for('employees.list_page'))

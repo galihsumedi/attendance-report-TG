@@ -40,6 +40,35 @@ Complete rewrite from a stateless upload-download tool into a database-backed we
 - On service restart, the empty DB re-seeds from the updated `nama_karyawan.py`, so the employee list is fully restored
 - Requires `GITHUB_TOKEN`, `GITHUB_REPO`, and `GITHUB_BRANCH=v3.0` env vars; silently skips if not configured (local dev unaffected)
 
+#### Petugas Keamanan — separate reporting format (2 June 2026)
+
+- Added `employee_type` column to `employees` table (`standard` | `keamanan`); existing employees default to `standard`
+- Four employees tagged as `keamanan`: Marto, Purnama Sancang, Bayu Prastyo, Yulian Nur Rahman
+- Employee create/edit form now has a **Tipe Karyawan** dropdown (Karyawan Standar / Petugas Keamanan)
+- **Laporan Individual** differences for `keamanan` employees:
+  - Jam Kerja column shows `8 Jam` instead of `08:00-17:00`
+  - Menit Terlambat column always blank (no lateness tracking)
+  - Red Jam Masuk font and "Terlambat x menit" catatan are suppressed
+  - Weekends and holidays still show scan data (security staff work all days)
+- **HOK (Hari Orang Kerja)** = count of days in the month where the employee has at least one scan
+- **Rekapitulasi** — new section appended below the main alphabetical table:
+  - Lists each Petugas Keamanan (alphabetical) with their HOK count
+  - Followed by a signature block (Dibuat Oleh / Diperiksa Oleh / Diketahui Oleh) with date and signer names
+
+#### Penyesuaian Massal — Hari Libur (2 June 2026)
+- Added **Hari Libur** as a third option in Penyesuaian Massal, alongside Cuaca atau Banjir and Cuti Bersama
+- Same behaviour as the other massal types: zeros lateness and exempts all employees on that date from HK Tidak Ada Scan
+- Applies `adj_keterlambatan = hari_libur` and `adj_absen = hari_libur` to each affected row; written as one audit record
+
+#### Penyesuaian Absen — Dinas Lapangan atau Kerja (2 June 2026)
+- Added **Dinas Lapangan atau Kerja** to the Penyesuaian Absen dropdown in the cell edit form
+- Previously only available in Penyesuaian Keterlambatan; now also exempts the day from HK Tidak Ada Scan
+
+#### Export — Laporan Individual lateness highlights (2 June 2026)
+- When an employee has both a scan-in and scan-out and is late that day, the **Jam Masuk cell is now red**
+- The **Catatan column** for that day now includes `Terlambat x menit` (appended with ` | ` separator if other catatan text is already present)
+- Only applies to normal workdays with both scans present; weekend and holiday rows are unaffected (those already render the full row in red)
+
 #### Bug fixes
 - Log Penyesuaian no longer shows phantom entries for employees who had no personal adjustments (was caused by bulk actions writing one audit row per employee)
 - Dropdown menus in the cell edit form (Penyesuaian Keterlambatan, Penyesuaian Absen) now open correctly — clicks inside the form were bubbling up to the parent `<td>`'s HTMX handler, causing the form to reload before any dropdown could open

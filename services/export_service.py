@@ -69,18 +69,26 @@ def buat_excel_dari_db(
     laporan_individual: dict[str, dict] = {}
     rekapitulasi_map: dict[str, dict] = {}
 
+    # Build employee_type lookup from DB
+    emp_type_map: dict[int, str] = {}
+    for row in conn.execute('SELECT id, employee_type FROM employees').fetchall():
+        emp_type_map[row['id']] = row['employee_type']
+
     for emp in employees:
         pin = emp['pin']
         nama = emp['nama']
+        emp_type = emp_type_map.get(emp['employee_id'], 'standard')
         laporan_individual[pin] = {
             'pin': pin,
             'nip': emp['nip'],
             'nama': nama,
+            'employee_type': emp_type,
             'detail': [],
             'count_cuti': 0,
             'count_sakit': 0,
             'count_izin': 0,
             'count_dinas': 0,
+            'hok': 0,
         }
         rekapitulasi_map[pin] = {
             'pin': pin,
@@ -89,8 +97,10 @@ def buat_excel_dari_db(
             'jabatan': emp['jabatan'],
             'departemen': emp['departemen'],
             'kantor': emp['kantor'],
+            'employee_type': emp_type,
             'jumlah_hari_terlambat': 0,
             'total_menit_terlambat': 0,
+            'hok': 0,
         }
 
     # Index days by (pin, tanggal)
@@ -102,6 +112,8 @@ def buat_excel_dari_db(
     all_dates = [datetime(tahun, bulan, day) for day in range(1, jumlah_hari + 1)]
 
     for pin in sorted(laporan_individual.keys(), key=lambda p: laporan_individual[p]['nama'].upper()):
+        emp_type = laporan_individual[pin]['employee_type']
+        is_keamanan = emp_type == 'keamanan'
         detail_list = []
         for tgl in all_dates:
             tgl_str = tgl.strftime('%Y-%m-%d')
@@ -110,7 +122,7 @@ def buat_excel_dari_db(
             if d:
                 jam_masuk = _str_to_time(d['adj_jam_masuk'] or d['raw_scan1'])
                 jam_keluar = _str_to_time(d['adj_jam_keluar'] or d['raw_scan2'])
-                menit_terlambat = d['menit_terlambat']
+                menit_terlambat = 0 if is_keamanan else d['menit_terlambat']
                 catatan_otomatis = d['catatan_otomatis']
                 catatan_manual = d['catatan_manual'] or ''
                 is_weekend = bool(d['is_weekend'])
@@ -130,8 +142,12 @@ def buat_excel_dari_db(
                 adj_ket = ''
                 adj_abs = ''
 
-            # Accumulate absence counts (workdays only)
-            if not is_weekend and not is_holiday:
+            # HOK: count days with any scan for security staff
+            if is_keamanan and jam_masuk is not None:
+                laporan_individual[pin]['hok'] += 1
+
+            # Accumulate absence counts (workdays only, standard employees)
+            if not is_keamanan and not is_weekend and not is_holiday:
                 if adj_abs in ('cuti', 'cuti_bersama') or adj_ket == 'cuti_bersama':
                     laporan_individual[pin]['count_cuti'] += 1
                 elif adj_abs == 'sakit':
@@ -162,14 +178,14 @@ def buat_excel_dari_db(
 
             jam_terlambat_str = _format_menit(menit_terlambat)
 
-            if menit_terlambat > 0:
+            if not is_keamanan and menit_terlambat > 0:
                 rekapitulasi_map[pin]['total_menit_terlambat'] += menit_terlambat
                 rekapitulasi_map[pin]['jumlah_hari_terlambat'] += 1
 
             detail_list.append({
                 'hari': HARI_INDONESIA[tgl.weekday()],
                 'tanggal': tgl,
-                'jam_kerja': '08:00-17:00',
+                'jam_kerja': '8 Jam' if is_keamanan else '08:00-17:00',
                 'jam_masuk': jam_masuk,
                 'jam_keluar': jam_keluar,
                 'jam_terlambat': jam_terlambat_str,
@@ -182,6 +198,7 @@ def buat_excel_dari_db(
             })
 
         laporan_individual[pin]['detail'] = detail_list
+        rekapitulasi_map[pin]['hok'] = laporan_individual[pin]['hok']
 
     rekapitulasi = sorted(rekapitulasi_map.values(), key=lambda x: x['nama'].upper())
 

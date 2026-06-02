@@ -15,7 +15,7 @@ from datetime import datetime, time
 
 from models import get_attendance_day, update_attendance_day, get_setting
 
-ZERO_LATENESS_TYPES = {'cuaca', 'dinas_lapangan', 'keterlambatan_disetujui', 'koreksi_scan', 'cuaca_banjir', 'cuti_bersama'}
+ZERO_LATENESS_TYPES = {'cuaca', 'dinas_lapangan', 'keterlambatan_disetujui', 'koreksi_scan', 'cuaca_banjir', 'cuti_bersama', 'hari_libur'}
 
 
 def _parse_time(s: str | None) -> time | None:

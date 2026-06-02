@@ -10,6 +10,13 @@
         <label>Nama Lengkap</label>
         <input type="text" name="nama_lengkap" value="{{ employee.nama_lengkap if employee else '' }}" required placeholder="Nama lengkap sesuai dokumen">
       </div>
+      <div class="form-group">
+        <label>Tipe Karyawan</label>
+        <select name="employee_type">
+          <option value="standard" {% if not employee or employee.employee_type == 'standard' %}selected{% endif %}>Karyawan Standar</option>
+          <option value="keamanan" {% if employee and employee.employee_type == 'keamanan' %}selected{% endif %}>Petugas Keamanan</option>
+        </select>
+      </div>
       {% if not employee %}
       <div class="form-group">
         <label>Alias Fingerprint (opsional)</label>

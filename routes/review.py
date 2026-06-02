@@ -36,6 +36,7 @@ KETERLAMBATAN_CHOICES = [
 # Penyesuaian Absen options — exempt from HK Tidak Ada Scan
 ABSEN_CHOICES = [
     ('cuti', 'Cuti'),
+    ('dinas_lapangan', 'Dinas Lapangan atau Kerja'),
     ('izin', 'Izin'),
     ('sakit', 'Sakit'),
     ('koreksi_scan', 'Koreksi Scan'),
@@ -45,6 +46,7 @@ ABSEN_CHOICES = [
 MASSAL_CHOICES = [
     ('cuaca_banjir', 'Cuaca atau Banjir'),
     ('cuti_bersama', 'Cuti Bersama'),
+    ('hari_libur', 'Hari Libur'),
 ]
 
 
@@ -230,7 +232,7 @@ def bulk_adjust(period_id):
     tanggal = request.form.get('tanggal', '').strip()
     catatan = request.form.get('catatan', '').strip()
 
-    if tipe_massal not in ('cuaca_banjir', 'cuti_bersama') or not tanggal:
+    if tipe_massal not in ('cuaca_banjir', 'cuti_bersama', 'hari_libur') or not tanggal:
         flash('Tipe dan tanggal harus diisi.', 'error')
         return redirect(url_for('review.review_page', period_id=period_id))
 

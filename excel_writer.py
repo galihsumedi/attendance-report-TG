@@ -223,6 +223,71 @@ def buat_sheet_rekapitulasi(
     for kol, w in lebar.items():
         ws.column_dimensions[kol].width = w
 
+    # ---- HOK section (Petugas Keamanan only) ----
+    security = sorted(
+        [k for k in rekapitulasi if k.get('employee_type') == 'keamanan'],
+        key=lambda x: x['nama'].upper(),
+    )
+    if security:
+        r_hok = 6 + len(rekapitulasi) + 2
+
+        ws[f'A{r_hok}'].value = 'HOK Petugas Keamanan'
+        ws[f'A{r_hok}'].font = FONT_HEADER
+        r_hok += 1
+
+        for k in security:
+            ws[f'B{r_hok}'].value = k['nama']
+            ws[f'B{r_hok}'].font = FONT_NORMAL
+            ws[f'B{r_hok}'].alignment = ALIGN_L
+            ws[f'C{r_hok}'].value = k['hok']
+            ws[f'C{r_hok}'].font = FONT_NORMAL
+            ws[f'C{r_hok}'].alignment = ALIGN_C0
+            ws[f'D{r_hok}'].value = 'HOK'
+            ws[f'D{r_hok}'].font = FONT_NORMAL
+            ws[f'D{r_hok}'].alignment = ALIGN_L
+            r_hok += 1
+
+        r_hok += 1  # blank gap before signature
+
+        # Date line
+        from datetime import date as _date
+        today_str = _date.today().strftime('%d %B %Y')
+        ws.merge_cells(f'I{r_hok}:M{r_hok}')
+        c = ws[f'I{r_hok}']
+        c.value = f'Samarinda, {today_str}'
+        c.font = FONT_NORMAL
+        c.alignment = ALIGN_L
+        r_hok += 1
+
+        # Signature labels
+        ws.merge_cells(f'A{r_hok}:D{r_hok}')
+        ws.merge_cells(f'E{r_hok}:H{r_hok}')
+        ws.merge_cells(f'I{r_hok}:M{r_hok}')
+        for ref, text in [
+            (f'A{r_hok}', 'Dibuat Oleh :'),
+            (f'E{r_hok}', 'Diperiksa Oleh :'),
+            (f'I{r_hok}', 'Diketahui Oleh :'),
+        ]:
+            c = ws[ref]
+            c.value = text
+            c.font = FONT_NORMAL
+            c.alignment = ALIGN_L
+        r_hok += 4  # blank signature space
+
+        # Signer names
+        ws.merge_cells(f'A{r_hok}:D{r_hok}')
+        ws.merge_cells(f'E{r_hok}:H{r_hok}')
+        ws.merge_cells(f'I{r_hok}:M{r_hok}')
+        for ref, text in [
+            (f'A{r_hok}', SIGNER_NAMES[0]),
+            (f'E{r_hok}', SIGNER_NAMES[1]),
+            (f'I{r_hok}', SIGNER_NAMES[2]),
+        ]:
+            c = ws[ref]
+            c.value = text
+            c.font = FONT_NORMAL
+            c.alignment = ALIGN_L
+
 
 # ---------------------------------------------------------------------------
 # Sheet 4 (hidden) — Data Harian
@@ -392,6 +457,8 @@ def buat_sheet_individual_static(
             c.alignment = ALIGN_C
             ws[f'{cl}{r_hdr+1}'].border = BORDER
 
+        is_keamanan = data.get('employee_type') == 'keamanan'
+
         # ---- Daily data rows ----
         for idx, d in enumerate(detail):
             r = ds + idx
@@ -405,14 +472,22 @@ def buat_sheet_individual_static(
                 font, fill = FONT_NORMAL, None
 
             menit = d['menit_terlambat']
+            has_both_scans = bool(d['jam_masuk'] and d['jam_keluar'])
+            is_late = not is_keamanan and menit > 0 and has_both_scans
+
+            catatan = d['catatan_otomatis']
+            if is_late:
+                suffix = f'Terlambat {menit} menit'
+                catatan = f'{catatan} | {suffix}' if catatan else suffix
+
             row_vals = [
                 ('A', d['hari'],                            ALIGN_C0),
                 ('B', d['tanggal'],                         ALIGN_C0),
                 ('C', d['jam_kerja'],                       ALIGN_C0),
                 ('D', format_waktu(d['jam_masuk']),         ALIGN_C0),
                 ('E', format_waktu(d['jam_keluar']),        ALIGN_C0),
-                ('F', menit if menit > 0 else None,         ALIGN_C0),
-                ('G', d['catatan_otomatis'],                ALIGN_L),
+                ('F', None if is_keamanan else (menit if menit > 0 else None), ALIGN_C0),
+                ('G', catatan,                              ALIGN_L),
             ]
             for cl, val, align in row_vals:
                 c = ws[f'{cl}{r}']
@@ -423,6 +498,8 @@ def buat_sheet_individual_static(
                 if fill:
                     c.fill = fill
             ws[f'B{r}'].number_format = 'DD-MM-YYYY'
+            if is_late and not is_wknd and not is_libur:
+                ws[f'D{r}'].font = FONT_MERAH
 
         # ---- TOTAL row ----
         ws.merge_cells(f'A{r_total}:E{r_total}')
