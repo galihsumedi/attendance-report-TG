@@ -251,7 +251,12 @@ def buat_sheet_rekapitulasi(
 
         # Date line
         from datetime import date as _date
-        today_str = _date.today().strftime('%d %B %Y')
+        _BULAN_ID = [
+            '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+        ]
+        _today = _date.today()
+        today_str = f'{_today.day:02d} {_BULAN_ID[_today.month]} {_today.year}'
         ws.merge_cells(f'I{r_hok}:M{r_hok}')
         c = ws[f'I{r_hok}']
         c.value = f'Samarinda, {today_str}'

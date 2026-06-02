@@ -55,6 +55,10 @@ Complete rewrite from a stateless upload-download tool into a database-backed we
   - Lists each Petugas Keamanan (alphabetical) with their HOK count
   - Followed by a signature block (Dibuat Oleh / Diperiksa Oleh / Diketahui Oleh) with date and signer names
 
+#### Export — Rekapitulasi HOK signature date in Indonesian (2 June 2026)
+- The "Samarinda, [date]" line in the HOK signature block now uses Indonesian month names (e.g. `02 Juni 2026` instead of `02 June 2026`)
+- Date still reflects the day of export, not the reporting period
+
 #### Penyesuaian Massal — Hari Libur (2 June 2026)
 - Added **Hari Libur** as a third option in Penyesuaian Massal, alongside Cuaca atau Banjir and Cuti Bersama
 - Same behaviour as the other massal types: zeros lateness and exempts all employees on that date from HK Tidak Ada Scan
