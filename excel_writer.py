@@ -104,8 +104,8 @@ def buat_sheet_rekapitulasi(
         'D': 'Sakit',
         'E': 'Izin',
         'I': 'Jumlah\nDalam Menit',
-        'K': 'Total',
-        'M': 'Jumlah',
+        'K': 'Total Denda',
+        'M': 'Jumlah Sanksi',
     }
     for kol, label in span_two_rows.items():
         ws[f'{kol}4'].value = label
@@ -138,8 +138,8 @@ def buat_sheet_rekapitulasi(
     _header_cell(ws, 'J4', 'Denda/Menit')
     _header_cell(ws, 'J5', 'Rp.')
 
-    # L: two-row label (Sangsi / 20 X), not merged
-    _header_cell(ws, 'L4', 'Sangsi')
+    # L: two-row label (Sanksi / 20 X), not merged
+    _header_cell(ws, 'L4', 'Sanksi')
     _header_cell(ws, 'L5', '20 X')
 
     # ---- Data rows ----
@@ -170,7 +170,7 @@ def buat_sheet_rekapitulasi(
         denda = k.get('denda_per_menit') or None
         c = ws.cell(row=r, column=10, value=denda)
         c.font = FONT_NORMAL
-        c.number_format = '#,##0.0000'
+        c.number_format = '#,##0'
         c.border = BORDER
         c.alignment = ALIGN_C0
 

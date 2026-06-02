@@ -55,6 +55,10 @@ Complete rewrite from a stateless upload-download tool into a database-backed we
   - Lists each Petugas Keamanan (alphabetical) with their HOK count
   - Followed by a signature block (Dibuat Oleh / Diperiksa Oleh / Diketahui Oleh) with date and signer names
 
+#### Export — Rekapitulasi column header corrections and number formatting (2 June 2026)
+- Renamed column headers: Total → Total Denda, Sangsi → Sanksi, Jumlah → Jumlah Sanksi
+- Denda/Menit, Total Denda, and Jumlah Sanksi columns now formatted to zero decimal places (`#,##0`); underlying values unchanged
+
 #### Denda/Menit per karyawan (2 June 2026)
 - Added `denda_per_menit` column to `employees` table
 - All 36 existing employees seeded with correct values from the May 2026 reference file
