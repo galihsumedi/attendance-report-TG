@@ -54,3 +54,10 @@ NAMA_LENGKAP: dict[str, str] = {
     'Yuli':    'Yuliansyah',
     'sunoko':  'Sunoko',
 }
+
+EMPLOYEE_TYPES: dict[str, str] = {
+    'Bayu Prastyo':     'keamanan',
+    'Marto':            'keamanan',
+    'Purnama Sancang':  'keamanan',
+    'Yulian Nur Rahman':'keamanan',
+}

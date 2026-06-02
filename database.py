@@ -128,7 +128,9 @@ def migrasi_nama_karyawan(conn: sqlite3.Connection) -> None:
     if count > 0:
         return
     try:
-        from nama_karyawan import NAMA_LENGKAP
+        import nama_karyawan
+        NAMA_LENGKAP = nama_karyawan.NAMA_LENGKAP
+        EMPLOYEE_TYPES = getattr(nama_karyawan, 'EMPLOYEE_TYPES', {})
     except ImportError:
         return
     for alias, nama_lengkap in NAMA_LENGKAP.items():
@@ -138,8 +140,10 @@ def migrasi_nama_karyawan(conn: sqlite3.Connection) -> None:
         if row:
             emp_id = row['id']
         else:
+            emp_type = EMPLOYEE_TYPES.get(nama_lengkap, 'standard')
             cur = conn.execute(
-                'INSERT INTO employees (nama_lengkap) VALUES (?)', (nama_lengkap,)
+                'INSERT INTO employees (nama_lengkap, employee_type) VALUES (?, ?)',
+                (nama_lengkap, emp_type),
             )
             emp_id = cur.lastrowid
         conn.execute(

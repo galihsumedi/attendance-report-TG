@@ -27,6 +27,17 @@ def _build_file_content(conn: sqlite3.Connection) -> str:
     for r in rows:
         lines.append(f'    {repr(r[0])}: {repr(r[1])},\n')
     lines.append('}\n')
+
+    # Persist non-standard employee types so they survive a DB re-seed
+    type_rows = conn.execute(
+        "SELECT nama_lengkap, employee_type FROM employees WHERE employee_type != 'standard' ORDER BY nama_lengkap"
+    ).fetchall()
+    if type_rows:
+        lines.append('\nEMPLOYEE_TYPES = {\n')
+        for r in type_rows:
+            lines.append(f'    {repr(r[0])}: {repr(r[1])},\n')
+        lines.append('}\n')
+
     return ''.join(lines)
 
 

@@ -55,6 +55,12 @@ Complete rewrite from a stateless upload-download tool into a database-backed we
   - Lists each Petugas Keamanan (alphabetical) with their HOK count
   - Followed by a signature block (Dibuat Oleh / Diperiksa Oleh / Diketahui Oleh) with date and signer names
 
+#### Fix: employee_type persisted across Render restarts (2 June 2026)
+- `nama_karyawan.py` now includes an `EMPLOYEE_TYPES` dict for non-standard employees (e.g. `'keamanan'`)
+- `github_service.py` writes `EMPLOYEE_TYPES` to `nama_karyawan.py` on every employee mutation, alongside the existing `NAMA_LENGKAP` dict
+- `database.py` re-seed migration now reads `EMPLOYEE_TYPES` and applies the correct type when creating employees from scratch
+- Without this fix, Petugas Keamanan employees would revert to `'standard'` after every Render restart
+
 #### Export — Rekapitulasi HOK signature date in Indonesian (2 June 2026)
 - The "Samarinda, [date]" line in the HOK signature block now uses Indonesian month names (e.g. `02 Juni 2026` instead of `02 June 2026`)
 - Date still reflects the day of export, not the reporting period
