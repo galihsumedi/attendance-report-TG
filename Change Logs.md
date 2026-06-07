@@ -7,6 +7,36 @@
 
 ---
 
+## v3.1 — Supabase PostgreSQL backend (7 June 2026)
+
+Replaces the ephemeral SQLite + GitHub-sync workaround with a persistent Supabase PostgreSQL database. Attendance records now survive Render free-tier restarts. No changes to the UI or business logic.
+
+### What changed
+
+| Area | v3.0 | v3.1 |
+|---|---|---|
+| Database | SQLite on Render ephemeral filesystem | Supabase PostgreSQL (persistent) |
+| Employee persistence | `nama_karyawan.py` committed to GitHub on every change | Stored directly in Supabase `attendance` schema |
+| Attendance records | Lost on every Render restart | Permanently stored |
+| `github_service.py` | Required (GitHub token, repo, branch env vars) | Deleted — no longer needed |
+| Env vars required | `GITHUB_TOKEN`, `GITHUB_REPO`, `GITHUB_BRANCH`, `DATABASE_PATH` | `DATABASE_URL` only |
+
+### Technical details
+- `database.py` rewritten: psycopg2 `DbWrapper` class presents a sqlite3-compatible interface (auto-converts `?` → `%s` placeholders, returns `RealDictRow` subscriptable by column name)
+- `models.py`: INSERT statements updated with `RETURNING id`; `datetime('now')` → `NOW()`; `LIKE` → `ILIKE` for case-insensitive name search
+- `services/github_service.py` deleted; all `sync_nama_karyawan()` call sites removed from `routes/upload.py` and `routes/employees.py`
+- Attendance tables live in a separate `attendance` schema in the same Supabase project as the HR master database (`public` schema)
+- `nama_karyawan.py` remains in the repo for the processor's runtime name map; it is no longer read or written by the app on startup or employee mutations
+
+### New env var on Render
+```
+DATABASE_URL=postgresql://postgres:<password>@db.xqluqxgwtnznylwvxlwc.supabase.co:5432/postgres
+```
+
+Remove: `GITHUB_TOKEN`, `GITHUB_REPO`, `GITHUB_BRANCH`, `DATABASE_PATH`
+
+---
+
 ## v3.0 — Stateful Review App (in progress)
 
 > **Status: Beta — actively being worked on. See planned items at the bottom of this entry.**

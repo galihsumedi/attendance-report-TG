@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sqlite3
 from typing import Any
 
 
@@ -8,19 +7,19 @@ from typing import Any
 # Employees & aliases
 # ---------------------------------------------------------------------------
 
-def get_all_employees(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+def get_all_employees(conn) -> list:
     return conn.execute(
         'SELECT * FROM employees ORDER BY nama_lengkap'
     ).fetchall()
 
 
-def get_employee(conn: sqlite3.Connection, employee_id: int) -> sqlite3.Row | None:
+def get_employee(conn, employee_id: int):
     return conn.execute(
         'SELECT * FROM employees WHERE id = ?', (employee_id,)
     ).fetchone()
 
 
-def get_employee_by_alias(conn: sqlite3.Connection, alias: str) -> sqlite3.Row | None:
+def get_employee_by_alias(conn, alias: str):
     return conn.execute(
         '''SELECT e.* FROM employees e
            JOIN employee_aliases a ON a.employee_id = e.id
@@ -29,7 +28,7 @@ def get_employee_by_alias(conn: sqlite3.Connection, alias: str) -> sqlite3.Row |
     ).fetchone()
 
 
-def get_aliases_for_employee(conn: sqlite3.Connection, employee_id: int) -> list[sqlite3.Row]:
+def get_aliases_for_employee(conn, employee_id: int) -> list:
     return conn.execute(
         'SELECT * FROM employee_aliases WHERE employee_id = ? ORDER BY alias',
         (employee_id,),
@@ -37,53 +36,52 @@ def get_aliases_for_employee(conn: sqlite3.Connection, employee_id: int) -> list
 
 
 def create_employee(
-    conn: sqlite3.Connection,
+    conn,
     nama_lengkap: str,
     employee_type: str = 'standard',
     denda_per_menit: float = 0,
 ) -> int:
     cur = conn.execute(
-        'INSERT INTO employees (nama_lengkap, employee_type, denda_per_menit) VALUES (?, ?, ?)',
+        'INSERT INTO employees (nama_lengkap, employee_type, denda_per_menit) VALUES (?, ?, ?) RETURNING id',
         (nama_lengkap, employee_type, denda_per_menit),
     )
     conn.commit()
-    return cur.lastrowid
+    return cur.fetchone()['id']
 
 
 def update_employee(
-    conn: sqlite3.Connection,
+    conn,
     employee_id: int,
     nama_lengkap: str,
     employee_type: str = 'standard',
     denda_per_menit: float = 0,
 ) -> None:
     conn.execute(
-        "UPDATE employees SET nama_lengkap = ?, employee_type = ?, denda_per_menit = ?, updated_at = datetime('now') WHERE id = ?",
+        'UPDATE employees SET nama_lengkap = ?, employee_type = ?, denda_per_menit = ?, updated_at = NOW() WHERE id = ?',
         (nama_lengkap, employee_type, denda_per_menit, employee_id),
     )
     conn.commit()
 
 
-def delete_employee(conn: sqlite3.Connection, employee_id: int) -> None:
+def delete_employee(conn, employee_id: int) -> None:
     conn.execute('DELETE FROM employees WHERE id = ?', (employee_id,))
     conn.commit()
 
 
-def add_alias(conn: sqlite3.Connection, employee_id: int, alias: str) -> int:
-    cur = conn.execute(
+def add_alias(conn, employee_id: int, alias: str) -> None:
+    conn.execute(
         'INSERT INTO employee_aliases (employee_id, alias) VALUES (?, ?)',
         (employee_id, alias),
     )
     conn.commit()
-    return cur.lastrowid
 
 
-def delete_alias(conn: sqlite3.Connection, alias_id: int) -> None:
+def delete_alias(conn, alias_id: int) -> None:
     conn.execute('DELETE FROM employee_aliases WHERE id = ?', (alias_id,))
     conn.commit()
 
 
-def get_all_aliases(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+def get_all_aliases(conn) -> list:
     return conn.execute(
         '''SELECT a.id, a.alias, a.employee_id, e.nama_lengkap
            FROM employee_aliases a JOIN employees e ON e.id = a.employee_id
@@ -91,7 +89,7 @@ def get_all_aliases(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     ).fetchall()
 
 
-def build_nama_lengkap_map(conn: sqlite3.Connection) -> dict[str, str]:
+def build_nama_lengkap_map(conn) -> dict[str, str]:
     """Returns {alias: nama_lengkap} for all registered aliases."""
     rows = conn.execute(
         'SELECT a.alias, e.nama_lengkap FROM employee_aliases a JOIN employees e ON e.id = a.employee_id'
@@ -99,9 +97,9 @@ def build_nama_lengkap_map(conn: sqlite3.Connection) -> dict[str, str]:
     return {r['alias']: r['nama_lengkap'] for r in rows}
 
 
-def autocomplete_employees(conn: sqlite3.Connection, q: str) -> list[sqlite3.Row]:
+def autocomplete_employees(conn, q: str) -> list:
     return conn.execute(
-        "SELECT id, nama_lengkap FROM employees WHERE nama_lengkap LIKE ? ORDER BY nama_lengkap LIMIT 20",
+        "SELECT id, nama_lengkap FROM employees WHERE nama_lengkap ILIKE ? ORDER BY nama_lengkap LIMIT 20",
         (f'%{q}%',),
     ).fetchall()
 
@@ -110,20 +108,20 @@ def autocomplete_employees(conn: sqlite3.Connection, q: str) -> list[sqlite3.Row
 # Periods
 # ---------------------------------------------------------------------------
 
-def list_periods(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+def list_periods(conn) -> list:
     return conn.execute(
         'SELECT * FROM periods ORDER BY tahun DESC, bulan DESC'
     ).fetchall()
 
 
-def get_period(conn: sqlite3.Connection, period_id: int) -> sqlite3.Row | None:
+def get_period(conn, period_id: int):
     return conn.execute(
         'SELECT * FROM periods WHERE id = ?', (period_id,)
     ).fetchone()
 
 
 def upsert_period(
-    conn: sqlite3.Connection,
+    conn,
     bulan: int,
     tahun: int,
     bulan_tahun: str,
@@ -134,28 +132,28 @@ def upsert_period(
     ).fetchone()
     if existing:
         conn.execute(
-            "UPDATE periods SET source_file = ?, status = 'draft', updated_at = datetime('now') WHERE id = ?",
+            "UPDATE periods SET source_file = ?, status = 'draft', updated_at = NOW() WHERE id = ?",
             (source_file, existing['id']),
         )
         conn.commit()
         return existing['id']
     cur = conn.execute(
-        'INSERT INTO periods (bulan, tahun, bulan_tahun, source_file) VALUES (?, ?, ?, ?)',
+        'INSERT INTO periods (bulan, tahun, bulan_tahun, source_file) VALUES (?, ?, ?, ?) RETURNING id',
         (bulan, tahun, bulan_tahun, source_file),
     )
     conn.commit()
-    return cur.lastrowid
+    return cur.fetchone()['id']
 
 
-def finalize_period(conn: sqlite3.Connection, period_id: int) -> None:
+def finalize_period(conn, period_id: int) -> None:
     conn.execute(
-        "UPDATE periods SET status = 'finalized', finalized_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
+        "UPDATE periods SET status = 'finalized', finalized_at = NOW(), updated_at = NOW() WHERE id = ?",
         (period_id,),
     )
     conn.commit()
 
 
-def delete_period(conn: sqlite3.Connection, period_id: int) -> None:
+def delete_period(conn, period_id: int) -> None:
     conn.execute('DELETE FROM periods WHERE id = ?', (period_id,))
     conn.commit()
 
@@ -165,11 +163,11 @@ def delete_period(conn: sqlite3.Connection, period_id: int) -> None:
 # ---------------------------------------------------------------------------
 
 def upsert_attendance_day(
-    conn: sqlite3.Connection,
+    conn,
     period_id: int,
     employee_id: int,
     row: dict[str, Any],
-) -> int:
+) -> None:
     existing = conn.execute(
         'SELECT id FROM attendance_days WHERE period_id = ? AND employee_id = ? AND tanggal = ?',
         (period_id, employee_id, row['tanggal']),
@@ -182,7 +180,7 @@ def upsert_attendance_day(
                is_weekend=?, is_holiday=?, nama_libur=?, is_day1_exempt=?,
                jabatan=?, departemen=?, kantor=?, nip=?,
                adj_jam_masuk=NULL, adj_jam_keluar=NULL, catatan_manual='',
-               updated_at=datetime('now')
+               updated_at=NOW()
                WHERE id=?""",
             (
                 row['pin'], row['nama'], row['raw_scan1'], row['raw_scan2'], row['raw_scan3'],
@@ -192,30 +190,26 @@ def upsert_attendance_day(
                 existing['id'],
             ),
         )
-        return existing['id']
-    cur = conn.execute(
-        """INSERT INTO attendance_days
-           (period_id, employee_id, pin, nama, tanggal,
-            raw_scan1, raw_scan2, raw_scan3,
-            menit_terlambat, status_hari, catatan_otomatis,
-            is_weekend, is_holiday, nama_libur, is_day1_exempt,
-            jabatan, departemen, kantor, nip)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-        (
-            period_id, employee_id, row['pin'], row['nama'], row['tanggal'],
-            row['raw_scan1'], row['raw_scan2'], row['raw_scan3'],
-            row['menit_terlambat'], row['status_hari'], row['catatan_otomatis'],
-            row['is_weekend'], row['is_holiday'], row['nama_libur'], row['is_day1_exempt'],
-            row.get('jabatan', ''), row.get('departemen', ''), row.get('kantor', ''), row.get('nip', ''),
-        ),
-    )
-    return cur.lastrowid
+    else:
+        conn.execute(
+            """INSERT INTO attendance_days
+               (period_id, employee_id, pin, nama, tanggal,
+                raw_scan1, raw_scan2, raw_scan3,
+                menit_terlambat, status_hari, catatan_otomatis,
+                is_weekend, is_holiday, nama_libur, is_day1_exempt,
+                jabatan, departemen, kantor, nip)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+                period_id, employee_id, row['pin'], row['nama'], row['tanggal'],
+                row['raw_scan1'], row['raw_scan2'], row['raw_scan3'],
+                row['menit_terlambat'], row['status_hari'], row['catatan_otomatis'],
+                row['is_weekend'], row['is_holiday'], row['nama_libur'], row['is_day1_exempt'],
+                row.get('jabatan', ''), row.get('departemen', ''), row.get('kantor', ''), row.get('nip', ''),
+            ),
+        )
 
 
-def get_attendance_days(
-    conn: sqlite3.Connection,
-    period_id: int,
-) -> list[sqlite3.Row]:
+def get_attendance_days(conn, period_id: int) -> list:
     return conn.execute(
         '''SELECT * FROM attendance_days
            WHERE period_id = ?
@@ -224,17 +218,13 @@ def get_attendance_days(
     ).fetchall()
 
 
-def get_attendance_day(conn: sqlite3.Connection, day_id: int) -> sqlite3.Row | None:
+def get_attendance_day(conn, day_id: int):
     return conn.execute(
         'SELECT * FROM attendance_days WHERE id = ?', (day_id,)
     ).fetchone()
 
 
-def update_attendance_day(
-    conn: sqlite3.Connection,
-    day_id: int,
-    fields: dict[str, Any],
-) -> None:
+def update_attendance_day(conn, day_id: int, fields: dict[str, Any]) -> None:
     allowed = {
         'adj_jam_masuk', 'adj_jam_keluar', 'status_hari',
         'catatan_manual', 'menit_terlambat',
@@ -246,13 +236,13 @@ def update_attendance_day(
         return
     vals.append(day_id)
     conn.execute(
-        f"UPDATE attendance_days SET {sets}, updated_at = datetime('now') WHERE id = ?",
+        f'UPDATE attendance_days SET {sets}, updated_at = NOW() WHERE id = ?',
         vals,
     )
     conn.commit()
 
 
-def get_period_employees(conn: sqlite3.Connection, period_id: int) -> list[sqlite3.Row]:
+def get_period_employees(conn, period_id: int) -> list:
     """Returns distinct employees who have rows in a period, sorted by name."""
     return conn.execute(
         '''SELECT DISTINCT employee_id, pin, nama, jabatan, departemen, kantor, nip
@@ -266,8 +256,8 @@ def get_period_employees(conn: sqlite3.Connection, period_id: int) -> list[sqlit
 # Adjustments
 # ---------------------------------------------------------------------------
 
-def create_adjustment(conn: sqlite3.Connection, data: dict[str, Any]) -> int:
-    cur = conn.execute(
+def create_adjustment(conn, data: dict[str, Any]) -> None:
+    conn.execute(
         """INSERT INTO adjustments
            (period_id, attendance_day_id, employee_id, tanggal_from, tanggal_to,
             tipe, kode_alasan, catatan, author, jam_masuk_koreksi, jam_keluar_koreksi)
@@ -281,10 +271,9 @@ def create_adjustment(conn: sqlite3.Connection, data: dict[str, Any]) -> int:
         ),
     )
     conn.commit()
-    return cur.lastrowid
 
 
-def get_adjustments_for_period(conn: sqlite3.Connection, period_id: int) -> list[sqlite3.Row]:
+def get_adjustments_for_period(conn, period_id: int) -> list:
     return conn.execute(
         '''SELECT a.*,
                COALESCE(e.nama_lengkap, e2.nama_lengkap, '— (massal)') AS nama_lengkap
@@ -298,7 +287,7 @@ def get_adjustments_for_period(conn: sqlite3.Connection, period_id: int) -> list
     ).fetchall()
 
 
-def get_adjustments_for_day(conn: sqlite3.Connection, day_id: int) -> list[sqlite3.Row]:
+def get_adjustments_for_day(conn, day_id: int) -> list:
     return conn.execute(
         'SELECT * FROM adjustments WHERE attendance_day_id = ? ORDER BY created_at',
         (day_id,),
@@ -309,19 +298,19 @@ def get_adjustments_for_day(conn: sqlite3.Connection, day_id: int) -> list[sqlit
 # Settings
 # ---------------------------------------------------------------------------
 
-def get_setting(conn: sqlite3.Connection, key: str, default: str = '') -> str:
+def get_setting(conn, key: str, default: str = '') -> str:
     row = conn.execute('SELECT value FROM settings WHERE key = ?', (key,)).fetchone()
     return row['value'] if row else default
 
 
-def set_setting(conn: sqlite3.Connection, key: str, value: str) -> None:
+def set_setting(conn, key: str, value: str) -> None:
     conn.execute(
-        'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+        'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
         (key, value),
     )
     conn.commit()
 
 
-def get_all_settings(conn: sqlite3.Connection) -> dict[str, str]:
+def get_all_settings(conn) -> dict[str, str]:
     rows = conn.execute('SELECT key, value FROM settings').fetchall()
     return {r['key']: r['value'] for r in rows}

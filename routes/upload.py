@@ -10,7 +10,6 @@ from auth import login_required
 from database import get_db
 from models import get_employee, create_employee, add_alias
 from services.scanner_service import get_unknown_aliases, parse_and_persist
-from services.github_service import sync_nama_karyawan
 
 bp = Blueprint('upload', __name__)
 
@@ -117,9 +116,6 @@ def match_names():
     finally:
         if os.path.exists(path):
             os.remove(path)
-
-    if resolve_map:
-        sync_nama_karyawan(db)
 
     flash(f'Scanlog {result["bulan_tahun"]} berhasil diproses ({result["jumlah_karyawan"]} karyawan).', 'success')
     return redirect(url_for('review.review_page', period_id=result['period_id']))
