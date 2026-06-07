@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Laporan Kehadiran v3.0{% endblock %} — Tectona Group</title>
+  <title>{% block title %}Laporan Kehadiran v3.1{% endblock %} — Tectona Group</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
   <script src="https://unpkg.com/htmx.org@1.9.12" crossorigin="anonymous"></script>
 </head>
 <body>
   <nav>
-    <span class="brand">&#128203; Kehadiran v3.0</span>
+    <span class="brand">&#128203; Kehadiran v3.1</span>
     <a href="{{ url_for('upload.upload_page') }}" {% if request.endpoint and request.endpoint.startswith('upload') %}class="active"{% endif %}>Upload</a>
     <a href="{{ url_for('periods.list_page') }}" {% if request.endpoint and request.endpoint.startswith('periods') %}class="active"{% endif %}>Periode</a>
     <a href="{{ url_for('employees.list_page') }}" {% if request.endpoint and request.endpoint.startswith('employees') %}class="active"{% endif %}>Karyawan</a>
